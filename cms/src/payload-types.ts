@@ -269,6 +269,10 @@ export interface Contract {
    * Standing media-release consent from the Trainers Agreement (name/photo/video usable in promotional material).
    */
   mediaConsent?: boolean | null;
+  /**
+   * "A trainer can flag/request completion, but admin makes the final transition" (§6.4, confirmed). Setting this does not itself release the contract — admin still moves status to Released/Discharged.
+   */
+  releaseRequested?: boolean | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -725,6 +729,7 @@ export interface ContractsSelect<T extends boolean = true> {
   file?: T;
   ratePerSession?: T;
   mediaConsent?: T;
+  releaseRequested?: T;
   updatedAt?: T;
   createdAt?: T;
 }

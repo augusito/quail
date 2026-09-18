@@ -76,13 +76,39 @@ Known gaps, called out in comments at their collection:
   alumni-specific, since "alumni" is an `Enrollment.outcome` value, not a
   `Users.role` this schema can filter collection access by
 
+## Workflow guards
+
+Two `beforeChange` hooks enforce the "plain validation logic, no workflow
+engine" guards §6.1/§6.4/§10 ask for, layered on top of (not instead of)
+the access control above:
+
+- **Contract lifecycle** (`src/hooks/contractLifecycle.ts`, on `Contracts`)
+  — enforces the Draft → Sent → Signed → Active → Released/Discharged
+  order one step at a time (no skipping, no going backward) and which role
+  may make each specific transition: admin for every step except
+  Sent→Signed, which the contract's own trainer may also make (uploading
+  their signed scan back). Only admin may ever move a contract to
+  Released/Discharged, matching the proposal's confirmed decision. A
+  trainer "flagging/requesting completion" (§6.4) is the separate
+  `releaseRequested` checkbox — it doesn't itself change `status`.
+- **Cohort closing checklist** (`src/hooks/cohortClosingChecklist.ts`, on
+  `Cohorts`) — blocks a transition to `closed` unless every
+  still-in-progress enrollment in that cohort has at least one Evaluation
+  on record and no pending/rejected Document, and every Contract for that
+  cohort is Released/Discharged. This is a literal, simplified reading —
+  it doesn't check evaluations are complete *per track* (e.g. both
+  driving-skills checkpoints for a driver-track intern); see the comment
+  in that file.
+
+Both hooks are skipped for trusted system-level calls (local API calls
+made with no `req.user`, e.g. seed/migration scripts) the same way access
+control is bypassed by `overrideAccess: true`. Covered by
+`tests/int/lifecycle.int.spec.ts`.
+
 ## Not yet implemented
 
 This is a data-model scaffold. Still to build, per the proposal:
 
-- Contract lifecycle & cohort-closing validation guards (§6.1, §6.4) —
-  note access control already restricts *who* can touch these rows;
-  this is about *which status transitions* are legal
 - Email reminders job queue (§6.3)
 - Invite-link registration flow (§6.2) — `Users.create` is already public
   to support this, but the invite-link/pending-approval mechanics aren't built

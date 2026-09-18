@@ -1,10 +1,12 @@
 import type { CollectionConfig } from 'payload'
 
 import { isAdmin, isAuthenticated } from '../access/roles'
+import { validateCohortClosingChecklist } from '../hooks/cohortClosingChecklist'
 
 // §6.1: a cohort can run multiple tracks in parallel. Closing is a
-// deliberate admin-confirmed action, not automatic on end date — see the
-// closing-checklist validation to be added alongside this collection.
+// deliberate admin-confirmed action, not automatic on end date — enforced
+// by access control (admin-only update) plus the closing-checklist
+// beforeChange hook below (see src/hooks/cohortClosingChecklist.ts).
 export const Cohorts: CollectionConfig = {
   slug: 'cohorts',
   admin: {
@@ -19,6 +21,9 @@ export const Cohorts: CollectionConfig = {
     read: isAuthenticated,
     update: isAdmin,
     delete: isAdmin,
+  },
+  hooks: {
+    beforeChange: [validateCohortClosingChecklist],
   },
   fields: [
     {
