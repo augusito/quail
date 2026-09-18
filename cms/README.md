@@ -124,8 +124,15 @@ User and its Enrollment on the registrant's behalf via `overrideAccess`
 always hardcoded server-side (`intern` / `pending`) — never read from the
 request body, so a registrant can't self-assign a role or skip approval.
 Admin reviews `status: pending` users and flips them to `active` through
-the existing Users collection (already admin-only, no extra guard needed).
-Covered by `tests/int/register.int.spec.ts`.
+the existing Users collection (already admin-only, no extra guard needed
+for *who* can approve). A `beforeLogin` hook
+(`src/hooks/restrictPendingLogin.ts`) rejects login outright for
+`pending` or `inactive` accounts — without it, "pending approval" would
+only be a label, since Payload's local-auth login has no built-in concept
+of our custom `status` field and would otherwise let a freshly
+self-registered account straight in. Covered by
+`tests/int/register.int.spec.ts`, including the full approval loop:
+register → blocked login → admin sets `status: active` → login succeeds.
 
 The logged link points at `/register?token=...`, a minimal client-side
 form (`src/app/(frontend)/register/page.tsx`) that reads the token from

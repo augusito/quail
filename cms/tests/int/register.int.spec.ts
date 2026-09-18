@@ -1,3 +1,8 @@
+// @vitest-environment node
+// This spec exercises real login (JWT signing via `jose`) — jsdom's
+// polyfills interfere with that the same way they interfered with
+// `file-type`'s buffer sniffing in lifecycle.int.spec.ts, so this file
+// opts back into the plain Node environment.
 import { getPayload, handleEndpoints, Payload } from 'payload'
 import config from '@/payload.config'
 
@@ -23,6 +28,15 @@ describe('POST /api/register (§6.2 invite-link self-registration)', () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
+    })
+    return handleEndpoints({ config: payloadConfig, request })
+  }
+
+  async function callLogin(email: string, password: string) {
+    const request = new Request('http://localhost:3000/api/users/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
     })
     return handleEndpoints({ config: payloadConfig, request })
   }
@@ -129,5 +143,47 @@ describe('POST /api/register (§6.2 invite-link self-registration)', () => {
   it('rejects a request missing required fields', async () => {
     const response = await callRegister({ email: 'missing-token@test.dev', password: 'test1234' })
     expect(response.status).toBe(400)
+  })
+
+  it('blocks login while pending, then allows it once admin approves (§6.2 approval flow)', async () => {
+    const { invite } = await createInvite()
+    const email = `approval-flow-${Date.now()}@test.dev`
+    const password = 'test1234'
+
+    const registerResponse = await callRegister({ token: invite.token, email, password })
+    expect(registerResponse.status).toBe(201)
+    const { userId } = await registerResponse.json()
+
+    const blockedLogin = await callLogin(email, password)
+    expect(blockedLogin.status).toBe(403)
+
+    // The admin's approval action — an ordinary Users.update, same as
+    // clicking "Active" in the admin UI and saving.
+    const approved = await payload.update({
+      collection: 'users',
+      id: userId,
+      data: { status: 'active' },
+      overrideAccess: true,
+    })
+    expect(approved.status).toBe('active')
+
+    const allowedLogin = await callLogin(email, password)
+    expect(allowedLogin.status).toBe(200)
+  })
+
+  it('blocks login for a deactivated (inactive) account', async () => {
+    const user = await payload.create({
+      collection: 'users',
+      data: {
+        email: `inactive-${Date.now()}@test.dev`,
+        password: 'test1234',
+        role: 'intern' as const,
+        status: 'inactive' as const,
+      },
+      overrideAccess: true,
+    })
+
+    const response = await callLogin(user.email, 'test1234')
+    expect(response.status).toBe(403)
   })
 })

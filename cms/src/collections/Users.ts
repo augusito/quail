@@ -2,6 +2,7 @@ import type { Access, AccessResult, CollectionConfig } from 'payload'
 
 import { adminOnlyField, hasRole, isAdmin } from '../access/roles'
 import { getSupervisedInternIds } from '../access/scoping'
+import { restrictPendingLogin } from '../hooks/restrictPendingLogin'
 
 const readAccess: Access = async ({ req: { user, payload } }): Promise<AccessResult> => {
   if (!user) return false
@@ -40,6 +41,9 @@ export const Users: CollectionConfig = {
     delete: isAdmin,
   },
   auth: true,
+  hooks: {
+    beforeLogin: [restrictPendingLogin],
+  },
   fields: [
     // Email added by default
     {
