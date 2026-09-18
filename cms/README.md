@@ -127,6 +127,11 @@ Admin reviews `status: pending` users and flips them to `active` through
 the existing Users collection (already admin-only, no extra guard needed).
 Covered by `tests/int/register.int.spec.ts`.
 
+The logged link points at `/register?token=...`, a minimal client-side
+form (`src/app/(frontend)/register/page.tsx`) that reads the token from
+the URL and posts to the endpoint above — functional, not styled; the
+polished public site is still future work (see below).
+
 Not modeled: single-use tokens (an invite can register multiple accounts
 until it expires or is revoked, matching "anyone with it can create an
 account"); rate-limiting the endpoint.
