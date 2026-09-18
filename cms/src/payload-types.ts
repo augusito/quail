@@ -72,6 +72,7 @@ export interface Config {
     files: File;
     cohorts: Cohort;
     enrollments: Enrollment;
+    invites: Invite;
     contracts: Contract;
     modules: Module;
     'training-sessions': TrainingSession;
@@ -96,6 +97,7 @@ export interface Config {
     files: FilesSelect<false> | FilesSelect<true>;
     cohorts: CohortsSelect<false> | CohortsSelect<true>;
     enrollments: EnrollmentsSelect<false> | EnrollmentsSelect<true>;
+    invites: InvitesSelect<false> | InvitesSelect<true>;
     contracts: ContractsSelect<false> | ContractsSelect<true>;
     modules: ModulesSelect<false> | ModulesSelect<true>;
     'training-sessions': TrainingSessionsSelect<false> | TrainingSessionsSelect<true>;
@@ -155,7 +157,10 @@ export interface User {
   id: number;
   name?: string | null;
   role: 'admin' | 'trainer' | 'intern' | 'supervisor';
-  status: 'active' | 'inactive';
+  /**
+   * "pending" is set automatically for §6.2 self-registrations, awaiting admin review (target 24h turnaround). Admin-created accounts default to "active".
+   */
+  status: 'active' | 'inactive' | 'pending';
   phone?: string | null;
   updatedAt: string;
   createdAt: string;
@@ -245,6 +250,30 @@ export interface Enrollment {
   supervisor?: (number | null) | User;
   track: 'truck-driving' | 'mechanics' | 'ict' | 'supply-chain' | 'business-management';
   outcome?: ('in-progress' | 'graduated' | 'resigned' | 'terminated') | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "invites".
+ */
+export interface Invite {
+  id: number;
+  cohort: number | Cohort;
+  track: 'truck-driving' | 'mechanics' | 'ict' | 'supply-chain' | 'business-management';
+  /**
+   * Auto-generated. The invite link is https://<app>/register?token=<this>.
+   */
+  token?: string | null;
+  /**
+   * Auto-set to 24h after creation (§6.2).
+   */
+  expiresAt?: string | null;
+  /**
+   * Admin's discretion, e.g. if the link leaked (§6.2). A revoked invite is rejected the same as an expired one.
+   */
+  revoked?: boolean | null;
+  createdBy?: (number | null) | User;
   updatedAt: string;
   createdAt: string;
 }
@@ -541,6 +570,10 @@ export interface PayloadLockedDocument {
         value: number | Enrollment;
       } | null)
     | ({
+        relationTo: 'invites';
+        value: number | Invite;
+      } | null)
+    | ({
         relationTo: 'contracts';
         value: number | Contract;
       } | null)
@@ -715,6 +748,20 @@ export interface EnrollmentsSelect<T extends boolean = true> {
   supervisor?: T;
   track?: T;
   outcome?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "invites_select".
+ */
+export interface InvitesSelect<T extends boolean = true> {
+  cohort?: T;
+  track?: T;
+  token?: T;
+  expiresAt?: T;
+  revoked?: T;
+  createdBy?: T;
   updatedAt?: T;
   createdAt?: T;
 }

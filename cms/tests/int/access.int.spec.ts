@@ -62,17 +62,38 @@ describe('Access control (§4 permissions matrix)', () => {
     ).rejects.toThrow()
   })
 
-  it('a non-admin cannot self-assign the admin role', async () => {
-    const created = await payload.create({
+  it('a public/unauthenticated request cannot create a user directly (must go through /api/register)', async () => {
+    await expect(
+      payload.create({
+        collection: 'users',
+        data: { email: 'direct-signup@test.dev', password: 'test1234', role: 'intern' as const, status: 'active' as const },
+        overrideAccess: false,
+        user: null,
+      }),
+    ).rejects.toThrow()
+  })
+
+  it('a non-admin cannot self-assign the admin role via update', async () => {
+    const self = await payload.create({
       collection: 'users',
-      // Attempted privilege escalation — role/status field access (admin-only
-      // write) should silently drop these and fall back to their defaults.
-      data: { email: 'selfpromote@test.dev', password: 'test1234', role: 'admin' as const, status: 'active' as const },
-      overrideAccess: false,
-      user: null,
+      data: { email: 'selfpromote@test.dev', password: 'test1234', role: 'intern' as const, status: 'active' as const },
+      overrideAccess: true,
     })
-    expect(created.role).toBe('intern') // default, not admin — field access silently drops the write
-    await payload.delete({ collection: 'users', id: created.id, overrideAccess: true })
+
+    const updated = await payload.update({
+      collection: 'users',
+      id: self.id,
+      // Attempted privilege escalation — role/status field access
+      // (admin-only write) should silently drop these and keep the
+      // original values.
+      data: { role: 'admin' as const, status: 'inactive' as const },
+      overrideAccess: false,
+      user: self,
+    })
+    expect(updated.role).toBe('intern')
+    expect(updated.status).toBe('active')
+
+    await payload.delete({ collection: 'users', id: self.id, overrideAccess: true })
   })
 
   it('a trainer can only create a Score for a module they run', async () => {

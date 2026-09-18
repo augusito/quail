@@ -14,6 +14,7 @@ import { Documents } from './collections/Documents'
 import { Enrollments } from './collections/Enrollments'
 import { Evaluations } from './collections/Evaluations'
 import { Files } from './collections/Files'
+import { Invites } from './collections/Invites'
 import { LogbookEntries } from './collections/LogbookEntries'
 import { Media } from './collections/Media'
 import { MediaAssets } from './collections/MediaAssets'
@@ -23,6 +24,7 @@ import { Scores } from './collections/Scores'
 import { TrainingSessions } from './collections/TrainingSessions'
 import { Users } from './collections/Users'
 import { Workplans } from './collections/Workplans'
+import { registerEndpoint } from './endpoints/register'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -58,6 +60,7 @@ export default buildConfig({
     Files,
     Cohorts,
     Enrollments,
+    Invites,
     Contracts,
     Modules,
     TrainingSessions,
@@ -72,6 +75,7 @@ export default buildConfig({
     Announcements,
   ],
   editor: lexicalEditor(),
+  endpoints: [registerEndpoint],
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {
     outputFile: path.resolve(dirname, 'payload-types.ts'),

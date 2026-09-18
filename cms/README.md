@@ -42,6 +42,7 @@ Mapped from the proposal's data model (§5):
 | `users` | §4 roles: admin / trainer / intern / supervisor |
 | `cohorts` | §6.1 |
 | `enrollments` | §6.1 |
+| `invites` | §6.2 |
 | `contracts` | §6.4 |
 | `modules`, `training-sessions` | §6.3, §6.4 |
 | `module-notes` | §6.4 |
@@ -105,13 +106,37 @@ made with no `req.user`, e.g. seed/migration scripts) the same way access
 control is bypassed by `overrideAccess: true`. Covered by
 `tests/int/lifecycle.int.spec.ts`.
 
+## Invite-link registration (§6.2)
+
+Admin creates an `Invites` record (`cohort` + `track` — a cohort can run
+multiple tracks in parallel, §6.1, so an invite is scoped to one). A
+`beforeChange` hook auto-generates the `token` and sets `expiresAt` 24h out
+(§6.2); an `afterChange` hook logs the resulting link —
+**email integration isn't implemented yet, so this is console-only** for
+now (`[invite] cohort=... track=... link=http://.../register?token=...`,
+via `payload.logger.info`, wired to `PAYLOAD_PUBLIC_SERVER_URL` if set).
+
+`POST /api/register` (`src/endpoints/register.ts`) is the public,
+unauthenticated counterpart: given `{ token, email, password, name? }`, it
+validates the invite (exists, not revoked, not expired), then creates the
+User and its Enrollment on the registrant's behalf via `overrideAccess`
+(both collections are otherwise admin-only). `role` and `status` are
+always hardcoded server-side (`intern` / `pending`) — never read from the
+request body, so a registrant can't self-assign a role or skip approval.
+Admin reviews `status: pending` users and flips them to `active` through
+the existing Users collection (already admin-only, no extra guard needed).
+Covered by `tests/int/register.int.spec.ts`.
+
+Not modeled: single-use tokens (an invite can register multiple accounts
+until it expires or is revoked, matching "anyone with it can create an
+account"); rate-limiting the endpoint.
+
 ## Not yet implemented
 
 This is a data-model scaffold. Still to build, per the proposal:
 
-- Email reminders job queue (§6.3)
-- Invite-link registration flow (§6.2) — `Users.create` is already public
-  to support this, but the invite-link/pending-approval mechanics aren't built
+- Email reminders job queue (§6.3) — also needed to actually email the
+  invite link above once an email adapter is wired up
 - Public Talent Board frontend (§6.9) — the API-level access rules
   (opted-in-only for public) are in place
 - Excel export endpoints (§6.11)
