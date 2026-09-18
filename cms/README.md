@@ -54,15 +54,40 @@ Mapped from the proposal's data model (§5):
 | `alumni-profiles` | §6.9, §6.10 |
 | `announcements` | §6.10 |
 
+## Access control
+
+Every collection's `access` config enforces the §4 permissions matrix —
+see `src/access/roles.ts` for the shared role helpers and the global
+principle (admin is always a superuser) and `src/access/scoping.ts` for the
+query-based row-level scoping (e.g. "supervisor may only see their assigned
+interns", "trainer may only see their own modules"). Sensitive fields
+(`Users.role`/`status`, `Documents.verificationStatus`) are additionally
+locked to admin-only write via field-level access. Covered by
+`tests/int/access.int.spec.ts`.
+
+Known gaps, called out in comments at their collection:
+
+- The §4 "media library access… unless granted per cohort" trainer
+  exception isn't modeled (`MediaAssets` is admin-only for now)
+- `Files` read access is any-authenticated-user rather than scoped through
+  the referencing Contract/Document/ModuleNote, since that needs a
+  cross-collection join per request (see comment in `Files.ts`)
+- `Announcements` read is any-authenticated-user rather than
+  alumni-specific, since "alumni" is an `Enrollment.outcome` value, not a
+  `Users.role` this schema can filter collection access by
+
 ## Not yet implemented
 
 This is a data-model scaffold. Still to build, per the proposal:
 
-- Per-role, per-record access control (§4 permissions matrix)
-- Contract lifecycle & cohort-closing validation guards (§6.1, §6.4)
+- Contract lifecycle & cohort-closing validation guards (§6.1, §6.4) —
+  note access control already restricts *who* can touch these rows;
+  this is about *which status transitions* are legal
 - Email reminders job queue (§6.3)
-- Invite-link registration flow (§6.2)
-- Public Talent Board frontend (§6.9)
+- Invite-link registration flow (§6.2) — `Users.create` is already public
+  to support this, but the invite-link/pending-approval mechanics aren't built
+- Public Talent Board frontend (§6.9) — the API-level access rules
+  (opted-in-only for public) are in place
 - Excel export endpoints (§6.11)
 
 ## Testing

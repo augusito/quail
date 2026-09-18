@@ -1,12 +1,26 @@
 import type { CollectionConfig } from 'payload'
 
+import { adminOnlyField, adminOrRoleOwnsField, isAdmin } from '../access/roles'
+
 // §6.7 Document Vault. Confirmed document types from the pitch deck; a
 // verification status (not just storage) lets admin track compliance.
+// §4 "Upload statutory documents": Admin (any), Intern (own). Not granted
+// to trainer/supervisor in the matrix.
 export const Documents: CollectionConfig = {
   slug: 'documents',
   admin: {
     useAsTitle: 'id',
     defaultColumns: ['intern', 'type', 'verificationStatus'],
+  },
+  access: {
+    create: adminOrRoleOwnsField('intern', 'intern'),
+    read: adminOrRoleOwnsField('intern', 'intern'),
+    // Interns can re-upload after a rejection, but can't self-verify —
+    // verificationStatus/rejectionReason are locked to admin below.
+    update: adminOrRoleOwnsField('intern', 'intern'),
+    // Deletion isn't a granted capability — these are compliance records
+    // (§6.7); admin manages the record lifecycle once submitted.
+    delete: isAdmin,
   },
   fields: [
     {
@@ -40,6 +54,10 @@ export const Documents: CollectionConfig = {
       type: 'select',
       required: true,
       defaultValue: 'pending',
+      access: {
+        create: adminOnlyField,
+        update: adminOnlyField,
+      },
       options: [
         { label: 'Pending', value: 'pending' },
         { label: 'Verified', value: 'verified' },
@@ -49,6 +67,10 @@ export const Documents: CollectionConfig = {
     {
       name: 'rejectionReason',
       type: 'textarea',
+      access: {
+        create: adminOnlyField,
+        update: adminOnlyField,
+      },
       admin: {
         condition: (_, siblingData) => siblingData?.verificationStatus === 'rejected',
       },

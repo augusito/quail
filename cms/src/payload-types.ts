@@ -201,6 +201,10 @@ export interface Media {
  */
 export interface File {
   id: number;
+  /**
+   * Set automatically on upload; used for update ownership.
+   */
+  uploadedBy?: (number | null) | User;
   updatedAt: string;
   createdAt: string;
   url?: string | null;
@@ -235,6 +239,10 @@ export interface Enrollment {
   id: number;
   intern: number | User;
   cohort: number | Cohort;
+  /**
+   * Assigned supervisor/"Mentor" for this intern — drives the §4/§6.6/§6.8 "assigned interns" access scoping.
+   */
+  supervisor?: (number | null) | User;
   track: 'truck-driving' | 'mechanics' | 'ict' | 'supply-chain' | 'business-management';
   outcome?: ('in-progress' | 'graduated' | 'resigned' | 'terminated') | null;
   updatedAt: string;
@@ -667,6 +675,7 @@ export interface MediaSelect<T extends boolean = true> {
  * via the `definition` "files_select".
  */
 export interface FilesSelect<T extends boolean = true> {
+  uploadedBy?: T;
   updatedAt?: T;
   createdAt?: T;
   url?: T;
@@ -699,6 +708,7 @@ export interface CohortsSelect<T extends boolean = true> {
 export interface EnrollmentsSelect<T extends boolean = true> {
   intern?: T;
   cohort?: T;
+  supervisor?: T;
   track?: T;
   outcome?: T;
   updatedAt?: T;

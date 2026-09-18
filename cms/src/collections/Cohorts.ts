@@ -1,5 +1,7 @@
 import type { CollectionConfig } from 'payload'
 
+import { isAdmin, isAuthenticated } from '../access/roles'
+
 // §6.1: a cohort can run multiple tracks in parallel. Closing is a
 // deliberate admin-confirmed action, not automatic on end date — see the
 // closing-checklist validation to be added alongside this collection.
@@ -8,6 +10,15 @@ export const Cohorts: CollectionConfig = {
   admin: {
     useAsTitle: 'name',
     defaultColumns: ['name', 'status', 'startDate', 'endDate'],
+  },
+  access: {
+    // "Create/close cohorts": Admin only (§4). Everyone else who's
+    // authenticated needs to read cohorts to do their own work (schedule
+    // sessions, see own enrollment, etc.) — cohorts carry no sensitive data.
+    create: isAdmin,
+    read: isAuthenticated,
+    update: isAdmin,
+    delete: isAdmin,
   },
   fields: [
     {

@@ -1,15 +1,37 @@
-import type { CollectionConfig } from 'payload'
+import type { Access, AccessResult, CollectionConfig } from 'payload'
+
+import { adminOrRoleOwnsField, hasRole, isAdmin } from '../access/roles'
+
+const readAccess: Access = ({ req: { user } }): AccessResult => {
+  if (hasRole(user, 'admin')) return true
+  if (hasRole(user, 'intern')) {
+    return { or: [{ optedIn: { equals: true } }, { intern: { equals: user!.id } }] }
+  }
+  // Public (and any other authenticated role): Talent Board view, opted-in only.
+  return { optedIn: { equals: true } }
+}
 
 // §6.9 Talent Board + §6.10 Alumni Hub. Talent Board eligibility is limited
 // to actual graduates (not resigned/non-completing alumni) — check the
 // linked intern's Enrollment.outcome (§6.1) before surfacing optedIn
 // profiles publicly. Employers contact admin as intermediary; this is not a
 // messaging surface (§6.9).
+//
+// §4: "View talent board" — Admin (all), Public (✅, view-only). "Edit own
+// talent board listing" — Admin, Intern (own, post-graduation opt-in).
+// Public/anonymous read is scoped to optedIn profiles only; the intern
+// still needs to read their own profile pre-opt-in to edit it.
 export const AlumniProfiles: CollectionConfig = {
   slug: 'alumni-profiles',
   admin: {
     useAsTitle: 'id',
     defaultColumns: ['intern', 'optedIn'],
+  },
+  access: {
+    create: adminOrRoleOwnsField('intern', 'intern'),
+    read: readAccess,
+    update: adminOrRoleOwnsField('intern', 'intern'),
+    delete: isAdmin,
   },
   fields: [
     {

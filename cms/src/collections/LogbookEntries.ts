@@ -1,15 +1,53 @@
 import type { CollectionConfig } from 'payload'
 
+import { hasRole, isAdmin, roleOnlyField } from '../access/roles'
+import { getSupervisedInternIds } from '../access/scoping'
+
 // §6.6: driver and non-driver logbooks have different field structures.
 // The driver track also has a supervisor/"Mentor" rollup log alongside the
 // intern's own per-trip entries — modeled here as author = 'supervisor'
 // records distinguished in the UI as "Supervisor observations", rather than
 // a separate collection (§4, §6.6).
+//
+// §4: "Update own logbook" — Intern only (own entries). "Review/comment on
+// logbooks" — Admin (all), Supervisor (assigned interns only, via
+// Enrollment.supervisor). Trainer has no logbook access in the matrix.
 export const LogbookEntries: CollectionConfig = {
   slug: 'logbook-entries',
   admin: {
     useAsTitle: 'id',
     defaultColumns: ['intern', 'type', 'author', 'status'],
+  },
+  access: {
+    create: async ({ req: { user, payload }, data }) => {
+      if (hasRole(user, 'admin')) return true
+      if (hasRole(user, 'intern')) return data?.intern === user!.id
+      if (hasRole(user, 'supervisor')) {
+        const internIds = await getSupervisedInternIds(payload, user!.id)
+        return internIds.some((id) => id === data?.intern)
+      }
+      return false
+    },
+    read: async ({ req: { user, payload } }) => {
+      if (!user) return false
+      if (hasRole(user, 'admin')) return true
+      if (hasRole(user, 'intern')) return { intern: { equals: user.id } }
+      if (hasRole(user, 'supervisor')) {
+        const internIds = await getSupervisedInternIds(payload, user.id)
+        return { intern: { in: internIds } }
+      }
+      return false
+    },
+    update: async ({ req: { user, payload } }) => {
+      if (hasRole(user, 'admin')) return true
+      if (hasRole(user, 'intern')) return { intern: { equals: user!.id } }
+      if (hasRole(user, 'supervisor')) {
+        const internIds = await getSupervisedInternIds(payload, user!.id)
+        return { intern: { in: internIds } }
+      }
+      return false
+    },
+    delete: isAdmin,
   },
   fields: [
     {
@@ -104,6 +142,10 @@ export const LogbookEntries: CollectionConfig = {
     {
       name: 'supervisorComment',
       type: 'textarea',
+      access: {
+        create: roleOnlyField('admin', 'supervisor'),
+        update: roleOnlyField('admin', 'supervisor'),
+      },
     },
     {
       name: 'status',

@@ -8,5 +8,8 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./vitest.setup.ts'],
     include: ['tests/int/**/*.int.spec.ts'],
+    // Integration specs share one SQLite file (test.env); running spec
+    // files concurrently causes SQLITE_BUSY lock contention.
+    fileParallelism: false,
   },
 })
