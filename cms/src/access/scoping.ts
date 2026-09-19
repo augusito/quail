@@ -33,3 +33,22 @@ export async function getTrainerModuleIds(payload: Payload, trainerId: ID): Prom
   })
   return [...new Set(docs.map((doc) => doc.module as ID))]
 }
+
+/**
+ * §6.1: "Resigned (non-completing) alumni are flagged internally as
+ * distinct from graduated alumni, so Talent Board eligibility can be
+ * limited to actual graduates while both still share the same Alumni Hub
+ * access." AlumniProfile itself doesn't record why an intern left — that's
+ * Enrollment.outcome — so public Talent Board visibility (§6.9) has to be
+ * cross-checked against it here.
+ */
+export async function getGraduatedInternIds(payload: Payload): Promise<ID[]> {
+  const { docs } = await payload.find({
+    collection: 'enrollments',
+    where: { outcome: { equals: 'graduated' } },
+    limit: 0,
+    depth: 0,
+    overrideAccess: true,
+  })
+  return [...new Set(docs.map((doc) => doc.intern as ID))]
+}

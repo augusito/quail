@@ -46,6 +46,9 @@ export default async function HomePage() {
           >
             Documentation
           </a>
+          <a className="docs" href="/talent-board">
+            Talent Board
+          </a>
         </div>
       </div>
       <div className="footer">

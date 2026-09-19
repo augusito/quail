@@ -210,12 +210,53 @@ authenticated session, and opened it back up to confirm the data
 round-trips correctly; confirmed a non-admin session gets 403. Covered by
 `tests/int/exports.int.spec.ts`.
 
-## Not yet implemented
+## Public Talent Board (§6.9)
 
-This is a data-model scaffold. Still to build, per the proposal:
+`/talent-board` (list) and `/talent-board/[id]` (detail) are plain
+server-rendered pages — no client-side data fetching, so there's nothing
+for a public visitor to bypass. Both fetch through the local API with
+`overrideAccess: false, user: null`, i.e. exactly the access rules an
+anonymous API request would get (`AlumniProfiles.readAccess`), not a
+separately-maintained "public" query that could drift out of sync.
 
-- Public Talent Board frontend (§6.9) — the API-level access rules
-  (opted-in-only for public) are in place
+Public fields shown: profile photo, name, courses, work experience, and
+the narrative bio (§6.9); email/phone appear only when the alum included
+them. View-only — no messaging UI. Instead there's a static "contact us"
+mailto link (`ADMIN_CONTACT_EMAIL`) on both pages, matching "Employers…
+contact admin directly… admin acts as the intermediary."
+
+Building this surfaced a real gap in the access control from the earlier
+pass: `AlumniProfiles.readAccess` checked `optedIn` but never the linked
+intern's `Enrollment.outcome`, even though §6.1 explicitly says Talent
+Board eligibility should be limited to actual graduates ("Resigned
+(non-completing) alumni are flagged internally as distinct from graduated
+alumni, so Talent Board eligibility can be limited to actual graduates").
+Fixed now via `getGraduatedInternIds` (`src/access/scoping.ts`) — a
+resigned-but-opted-in alum can still read/edit their own profile (Alumni
+Hub access, §6.10 — unaffected), but is excluded from what anyone else,
+public included, can see; confirmed as a direct 404 even by guessing
+their profile URL, not just hidden from the listing. Also added
+`AlumniProfile.name` (a §6.9 public field the schema was missing) since
+the intern's own `Users.name` isn't publicly readable and the two aren't
+meant to be the same lookup.
+
+Verified against the real dev server: an opted-in graduate appears on the
+listing and detail page as an anonymous visitor; an opted-in *resigned*
+alum is absent from the listing and 404s on direct link; the graduate's
+photo, bio, courses, and work experience all render correctly. Covered by
+`tests/int/talentBoard.int.spec.ts`.
+
+## Status
+
+Every feature in the proposal's phased rollout (§8) is now built: the
+full data model (§5), access control (§4), contract lifecycle &
+cohort-closing guards (§6.1, §6.4), invite-link registration (§6.2),
+session reminders (§6.3), Excel exports (§6.11), and the public Talent
+Board (§6.9). What's left is narrower refinement, not missing features —
+see the "known gaps" callouts under Access Control above (the
+per-cohort media-access exception, `Files`/`Announcements` read scoping)
+and the "Not modeled" note under Invite-link registration (single-use
+tokens, rate-limiting).
 
 ## Testing
 

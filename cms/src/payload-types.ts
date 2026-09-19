@@ -490,6 +490,10 @@ export interface MediaAsset {
 export interface AlumniProfile {
   id: number;
   intern: number | User;
+  /**
+   * The public Talent Board display name (§6.9 public field) — separate from Users.name, since the intern's account isn't publicly readable.
+   */
+  name: string;
   photo?: (number | null) | Media;
   employmentStatus?: string | null;
   /**
@@ -1038,6 +1042,7 @@ export interface MediaAssetsSelect<T extends boolean = true> {
  */
 export interface AlumniProfilesSelect<T extends boolean = true> {
   intern?: T;
+  name?: T;
   photo?: T;
   employmentStatus?: T;
   courses?:
