@@ -66,16 +66,36 @@ interns", "trainer may only see their own modules"). Sensitive fields
 locked to admin-only write via field-level access. Covered by
 `tests/int/access.int.spec.ts`.
 
-Known gaps, called out in comments at their collection:
+`Files` and `Announcements` read access started as "any authenticated
+user" (a known gap, since fixed — see below); the one remaining gap:
 
 - The §4 "media library access… unless granted per cohort" trainer
   exception isn't modeled (`MediaAssets` is admin-only for now)
-- `Files` read access is any-authenticated-user rather than scoped through
-  the referencing Contract/Document/ModuleNote, since that needs a
-  cross-collection join per request (see comment in `Files.ts`)
-- `Announcements` read is any-authenticated-user rather than
-  alumni-specific, since "alumni" is an `Enrollment.outcome` value, not a
-  `Users.role` this schema can filter collection access by
+
+### Files & Announcements read scoping
+
+`Files` (`src/collections/Files.ts`) is shared plumbing under Contracts,
+Documents, and ModuleNotes — each already scopes who may reference a
+given row (e.g. only a document's own intern), but the *file itself* was
+readable by any authenticated user. `getAccessibleFileIds`
+(`src/access/scoping.ts`) now resolves the actual set of File ids a user
+is entitled to by walking those same relationships (plus their own
+uploads) — e.g. a trainer can read the file attached to *their own*
+contract even though admin uploaded it, but not an unrelated intern's
+statutory documents.
+
+`Announcements` read was similarly wide open; §4's "Alumni Hub
+announcements" implies alumni-only reading, but "alumni" isn't a
+`Users.role` — it's `Enrollment.outcome` being `graduated` or `resigned`
+(§6.1: "both still share the same Alumni Hub access"). `getAlumniInternIds`
+closes that: a still-in-progress intern, trainer, or supervisor gets 403;
+a graduated or resigned alum (or admin) reads normally.
+
+Verified against the real dev server, not just tests: a trainer got a 200
+reading their own contract's file and a 404 on an unrelated intern's
+document file; a still-in-progress intern got 403 on an announcement a
+graduated alum could read with 200. Covered by
+`tests/int/filesAndAnnouncements.int.spec.ts`.
 
 ## Workflow guards
 
@@ -253,9 +273,8 @@ full data model (§5), access control (§4), contract lifecycle &
 cohort-closing guards (§6.1, §6.4), invite-link registration (§6.2),
 session reminders (§6.3), Excel exports (§6.11), and the public Talent
 Board (§6.9). What's left is narrower refinement, not missing features —
-see the "known gaps" callouts under Access Control above (the
-per-cohort media-access exception, `Files`/`Announcements` read scoping)
-and the "Not modeled" note under Invite-link registration (single-use
+the per-cohort media-access exception under Access Control above, and
+the "Not modeled" note under Invite-link registration (single-use
 tokens, rate-limiting).
 
 ## Testing
