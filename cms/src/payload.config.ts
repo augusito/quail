@@ -24,7 +24,9 @@ import { Scores } from './collections/Scores'
 import { TrainingSessions } from './collections/TrainingSessions'
 import { Users } from './collections/Users'
 import { Workplans } from './collections/Workplans'
+import { emailAdapter } from './email/adapter'
 import { registerEndpoint } from './endpoints/register'
+import { sendSessionReminderTask } from './jobs/sendSessionReminder'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -75,7 +77,18 @@ export default buildConfig({
     Announcements,
   ],
   editor: lexicalEditor(),
+  email: emailAdapter,
   endpoints: [registerEndpoint],
+  // §6.3 reminders run on Payload's built-in job queue (§10). autoRun
+  // processes due jobs every minute on this persistent server (§7 confirms
+  // hosting is a persistent process, not serverless — a requirement of
+  // autoRun itself). Disabled under Vitest so the interval it starts
+  // doesn't keep short-lived test processes alive; tests that care about
+  // job execution call payload.jobs.run() explicitly instead.
+  jobs: {
+    tasks: [sendSessionReminderTask],
+    autoRun: process.env.VITEST ? [] : [{ cron: '* * * * *', limit: 20 }],
+  },
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {
     outputFile: path.resolve(dirname, 'payload-types.ts'),

@@ -141,14 +141,53 @@ polished public site is still future work (see below).
 
 Not modeled: single-use tokens (an invite can register multiple accounts
 until it expires or is revoked, matching "anyone with it can create an
-account"); rate-limiting the endpoint.
+account"); rate-limiting the endpoint. The invite link itself is still
+console-only (see below) — emailing it to a specific address isn't wired
+up, since an Invite isn't tied to any one recipient.
+
+## Email & session reminders (§6.3)
+
+`src/email/adapter.ts` configures Payload's `email` config via
+`@payloadcms/email-nodemailer`. With `SMTP_HOST` set, it sends through
+real SMTP (`SMTP_PORT`/`SMTP_SECURE`/`SMTP_USER`/`SMTP_PASS`,
+`EMAIL_FROM`). With no `SMTP_HOST` (the default), it uses nodemailer's
+`jsonTransport` — mail is composed and "sent" without touching the
+network, safe for dev/tests. This deliberately does *not* use
+nodemailer's built-in ethereal.email test-account fallback: that makes a
+live network call on every `getPayload()` init, and a blocked or failed
+one would break the whole app (including CI).
+
+`src/jobs/sendSessionReminder.ts` is a Payload job-queue task; the
+`scheduleSessionReminder` / `resetReminderStatusOnReschedule` hooks
+(`src/hooks/sessionReminders.ts`, on `TrainingSessions`) queue it:
+
+- On create, for 2 hours before `scheduledDate` (§6.3) — or immediately
+  if that time has already passed.
+- On reschedule, a fresh job for the *new* time. Rather than tracking and
+  cancelling the old job, the task itself detects it's been superseded
+  (its captured `scheduledDateAtQueueTime` no longer matches the
+  session's current one) and no-ops — see the comment in that file.
+- Also on reschedule, if interns were already notified under the old
+  time: an immediate "rescheduled" notice (§6.3's "should trigger an
+  automatic re-notification"), queued for prompt pickup rather than sent
+  inline from the hook, same as every other reminder.
+
+Jobs are queued, not sent synchronously, so a slow mail provider never
+blocks the request that created/rescheduled a session, and retries are
+Payload's job-queue retry rather than hand-rolled. `jobs.autoRun` (every
+minute) actually processes the queue — disabled under Vitest so its
+interval doesn't keep test processes alive, and per Payload's own
+guidance not meant for serverless platforms, which lines up with §7's
+"hosting is a persistent server process" decision. Verified against the
+real dev server (not just tests): a session's reminder job was queued,
+`autoRun`'s cron picked it up autonomously about a minute later, and
+`reminderStatus` flipped to `sent` with no manual trigger. Covered by
+`tests/int/reminders.int.spec.ts`.
 
 ## Not yet implemented
 
 This is a data-model scaffold. Still to build, per the proposal:
 
-- Email reminders job queue (§6.3) — also needed to actually email the
-  invite link above once an email adapter is wired up
 - Public Talent Board frontend (§6.9) — the API-level access rules
   (opted-in-only for public) are in place
 - Excel export endpoints (§6.11)
