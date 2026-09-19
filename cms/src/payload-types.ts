@@ -241,6 +241,10 @@ export interface Cohort {
   startDate: string;
   endDate: string;
   status: 'draft' | 'open' | 'active' | 'closed';
+  /**
+   * §4 "Media library access… unless granted per cohort" — trainers listed here can view this cohort's cohort-extended media-assets (MediaAssets.ts). Admin-only assets stay admin-only regardless.
+   */
+  mediaAccessGrantedTo?: (number | User)[] | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -839,6 +843,7 @@ export interface CohortsSelect<T extends boolean = true> {
   startDate?: T;
   endDate?: T;
   status?: T;
+  mediaAccessGrantedTo?: T;
   updatedAt?: T;
   createdAt?: T;
 }

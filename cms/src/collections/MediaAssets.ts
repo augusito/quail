@@ -1,17 +1,31 @@
-import type { CollectionConfig } from 'payload'
+import type { Access, AccessResult, CollectionConfig, Where } from 'payload'
 
-import { isAdmin } from '../access/roles'
+import { hasRole, isAdmin } from '../access/roles'
+import { getMediaGrantedCohortIds } from '../access/scoping'
+
+const readAccess: Access = async ({ req: { user, payload } }): Promise<AccessResult> => {
+  if (hasRole(user, 'admin')) return true
+  if (!hasRole(user, 'trainer')) return false
+
+  const grantedCohortIds = await getMediaGrantedCohortIds(payload, user!.id)
+  if (grantedCohortIds.length === 0) return false
+
+  const where: Where = {
+    and: [{ cohort: { in: grantedCohortIds } }, { visibilityScope: { equals: 'cohort-extended' } }],
+  }
+  return where
+}
 
 // Cohort media library (§4, §6.4). Distinct from Media (generic uploads):
 // this carries a consent flag — capturing whether the depicted intern or
 // trainer has consented to promotional use beyond the library itself — and
 // cohort-scoped visibility (admin-only vs. cohort-extended).
 //
-// §4 "Media library access": Admin (all), Trainer (❌ "unless granted per
-// cohort" — that per-cohort grant isn't modeled in the schema yet, so the
-// exception isn't implemented; flagged as a follow-up). Intern/Supervisor/
-// Public are ❌ in the matrix, including for visibilityScope: 'cohort-extended'
-// rows — that field currently only affects display grouping, not access.
+// §4 "Media library access": Admin (all). Trainer is granted read-only
+// access, but only to visibilityScope: 'cohort-extended' assets belonging to
+// a cohort they've been listed on via Cohort.mediaAccessGrantedTo ("unless
+// granted per cohort") — admin-only assets stay admin-exclusive even within
+// a granted cohort. Intern/Supervisor/Public remain ❌, matching the matrix.
 export const MediaAssets: CollectionConfig = {
   slug: 'media-assets',
   admin: {
@@ -20,7 +34,7 @@ export const MediaAssets: CollectionConfig = {
   },
   access: {
     create: isAdmin,
-    read: isAdmin,
+    read: readAccess,
     update: isAdmin,
     delete: isAdmin,
   },

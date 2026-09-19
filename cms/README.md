@@ -51,7 +51,7 @@ Mapped from the proposal's data model (§5):
 | `evaluations` | §6.5 |
 | `workplans` | §5 |
 | `documents` | §6.7 |
-| `media`, `files`, `media-assets` | uploads (general / documents / consent-tracked cohort media, §6.4) |
+| `media`, `files`, `media-assets` | uploads (general / documents / consent-tracked cohort media, §6.4, gated per `Cohorts.mediaAccessGrantedTo`) |
 | `alumni-profiles` | §6.9, §6.10 |
 | `announcements` | §6.10 |
 
@@ -67,10 +67,9 @@ locked to admin-only write via field-level access. Covered by
 `tests/int/access.int.spec.ts`.
 
 `Files` and `Announcements` read access started as "any authenticated
-user" (a known gap, since fixed — see below); the one remaining gap:
-
-- The §4 "media library access… unless granted per cohort" trainer
-  exception isn't modeled (`MediaAssets` is admin-only for now)
+user" — a known gap, since fixed (see below), as was the §4 "media
+library access… unless granted per cohort" trainer exception (also
+below). No further documented gaps remain.
 
 ### Files & Announcements read scoping
 
@@ -96,6 +95,32 @@ reading their own contract's file and a 404 on an unrelated intern's
 document file; a still-in-progress intern got 403 on an announcement a
 graduated alum could read with 200. Covered by
 `tests/int/filesAndAnnouncements.int.spec.ts`.
+
+### Per-cohort media-access grant for trainers
+
+§4's Media library row grants Admin full access and Trainer none —
+"unless granted per cohort". `MediaAssets` previously had no way to model
+that grant, so it was admin-only outright. `Cohorts.mediaAccessGrantedTo`
+(a `hasMany` relationship to `users`, filtered to `role: trainer`) is now
+that per-cohort allowlist — admin picks which trainers, if any, can see a
+given cohort's media library; `getMediaGrantedCohortIds`
+(`src/access/scoping.ts`) resolves which cohorts a given trainer has been
+granted into.
+
+This also gives `MediaAssets.visibilityScope` real access-control meaning
+for the first time: a granted trainer can only read `cohort-extended`
+assets in a cohort they're listed on — `admin-only` assets in that same
+cohort stay admin-exclusive. An ungranted trainer, and every other role,
+gets nothing. `create`/`update`/`delete` remain admin-only — the matrix
+only grants trainers viewing, not management.
+
+Verified against the real dev server: a granted trainer got 200 reading a
+`cohort-extended` asset in their granted cohort and 404 on an `admin-only`
+asset in that same cohort; an ungranted trainer got 403 on the same
+`cohort-extended` asset; the granted trainer's list endpoint returned only
+the one asset they're entitled to (admin's list returned both); a PATCH by
+the granted trainer was rejected with 403. Covered by
+`tests/int/mediaAssets.int.spec.ts`.
 
 ## Workflow guards
 
@@ -272,10 +297,10 @@ Every feature in the proposal's phased rollout (§8) is now built: the
 full data model (§5), access control (§4), contract lifecycle &
 cohort-closing guards (§6.1, §6.4), invite-link registration (§6.2),
 session reminders (§6.3), Excel exports (§6.11), and the public Talent
-Board (§6.9). What's left is narrower refinement, not missing features —
-the per-cohort media-access exception under Access Control above, and
-the "Not modeled" note under Invite-link registration (single-use
-tokens, rate-limiting).
+Board (§6.9), and the per-cohort media-access grant for trainers under
+Access Control above. What's left is narrower refinement, not missing
+features — the "Not modeled" note under Invite-link registration
+(single-use tokens, rate-limiting).
 
 ## Testing
 

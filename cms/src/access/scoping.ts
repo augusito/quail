@@ -122,3 +122,19 @@ export async function getAccessibleFileIds(payload: Payload, userId: ID): Promis
   }
   return [...ids]
 }
+
+/**
+ * §4 "Media library access… unless granted per cohort" — Cohort.mediaAccessGrantedTo
+ * (added for this) is admin's per-cohort allowlist of trainers. Resolves
+ * which cohorts a given trainer has been granted into.
+ */
+export async function getMediaGrantedCohortIds(payload: Payload, trainerId: ID): Promise<ID[]> {
+  const { docs } = await payload.find({
+    collection: 'cohorts',
+    where: { mediaAccessGrantedTo: { equals: trainerId } },
+    limit: 0,
+    depth: 0,
+    overrideAccess: true,
+  })
+  return docs.map((doc) => doc.id as ID)
+}
