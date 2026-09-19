@@ -25,6 +25,7 @@ import { TrainingSessions } from './collections/TrainingSessions'
 import { Users } from './collections/Users'
 import { Workplans } from './collections/Workplans'
 import { emailAdapter } from './email/adapter'
+import { exportCollectionEndpoint } from './endpoints/exportCollection'
 import { registerEndpoint } from './endpoints/register'
 import { sendSessionReminderTask } from './jobs/sendSessionReminder'
 
@@ -78,7 +79,7 @@ export default buildConfig({
   ],
   editor: lexicalEditor(),
   email: emailAdapter,
-  endpoints: [registerEndpoint],
+  endpoints: [registerEndpoint, exportCollectionEndpoint],
   // §6.3 reminders run on Payload's built-in job queue (§10). autoRun
   // processes due jobs every minute on this persistent server (§7 confirms
   // hosting is a persistent process, not serverless — a requirement of

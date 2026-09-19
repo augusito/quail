@@ -184,13 +184,38 @@ real dev server (not just tests): a session's reminder job was queued,
 `reminderStatus` flipped to `sent` with no manual trigger. Covered by
 `tests/int/reminders.int.spec.ts`.
 
+## Excel exports (§6.11)
+
+`GET /api/export/:collection` — admin-only (§4 "Bulk export"), returns a
+real `.xlsx` download built with `exceljs`. `src/exports/registry.ts`
+defines the exportable collections (`users`, `enrollments`, `contracts`,
+`training-sessions`, `scores`, `evaluations`, `logbook-entries`,
+`documents`, `alumni-profiles`) with a hand-written, human-readable
+column list per collection — relationships resolve to a display name
+(via depth: 1 population) rather than a raw ID, since that's what makes
+a spreadsheet actually useful to open. It's not a generic "dump every
+field of every collection" exporter on purpose: that would surface raw
+IDs/JSON for relationships and nested groups, and silently reshape the
+spreadsheet whenever a field is added.
+
+`?cohort=<id>` narrows collections that carry a `cohort` field (e.g.
+exporting one cohort's roster before closing it, §6.1) — visit
+`/api/export/enrollments?cohort=<id>` while logged into `/admin` in the
+same browser (session cookie carries over). §6.11 confirmed Excel as the
+only v1 export destination — no Google Drive/OAuth integration.
+
+Verified against the real dev server, not just the test suite: logged in
+through the actual admin UI, downloaded a real `.xlsx` via the browser's
+authenticated session, and opened it back up to confirm the data
+round-trips correctly; confirmed a non-admin session gets 403. Covered by
+`tests/int/exports.int.spec.ts`.
+
 ## Not yet implemented
 
 This is a data-model scaffold. Still to build, per the proposal:
 
 - Public Talent Board frontend (§6.9) — the API-level access rules
   (opted-in-only for public) are in place
-- Excel export endpoints (§6.11)
 
 ## Testing
 
