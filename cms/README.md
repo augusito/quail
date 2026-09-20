@@ -184,11 +184,27 @@ form (`src/app/(frontend)/register/page.tsx`) that reads the token from
 the URL and posts to the endpoint above — functional, not styled; the
 polished public site is still future work (see below).
 
-Not modeled: single-use tokens (an invite can register multiple accounts
-until it expires or is revoked, matching "anyone with it can create an
-account"); rate-limiting the endpoint. The invite link itself is still
-console-only (see below) — emailing it to a specific address isn't wired
-up, since an Invite isn't tied to any one recipient.
+`POST /api/register` is rate-limited per source IP — `checkRateLimit`
+(`src/lib/rateLimit.ts`), a small in-memory fixed-window limiter keyed by
+`X-Forwarded-For` (falling back to `X-Real-IP`, then a shared `unknown`
+bucket for direct/local requests with neither header) — capped at 5
+requests per 15 minutes; over the limit returns `429` with a
+`Retry-After` header. It's in-process state, so it resets on redeploy and
+doesn't share state across multiple app instances — fine for this app's
+current single-instance deployment, but would need a shared store (e.g.
+Redis) behind a load balancer. Covered by the "rate limiting" describe
+block in `tests/int/register.int.spec.ts`, and verified against the real
+dev server: 5 requests with a bogus token returned `404` (normal
+invalid-token handling) as expected, the 6th returned `429` with
+`Retry-After: 900`, and a request from a different IP was unaffected.
+
+Not modeled: single-use tokens. An invite can still register multiple
+accounts until it expires or is revoked — left this way deliberately,
+since it matches the proposal's own wording ("anyone with it can create
+an account"): one invite per open cohort/track, shared with everyone
+registering into it, not a single-recipient token. The invite link itself
+is still console-only (see above) — emailing it to a specific address
+isn't wired up, since an Invite isn't tied to any one recipient.
 
 ## Email & session reminders (§6.3)
 
@@ -297,10 +313,11 @@ Every feature in the proposal's phased rollout (§8) is now built: the
 full data model (§5), access control (§4), contract lifecycle &
 cohort-closing guards (§6.1, §6.4), invite-link registration (§6.2),
 session reminders (§6.3), Excel exports (§6.11), and the public Talent
-Board (§6.9), and the per-cohort media-access grant for trainers under
-Access Control above. What's left is narrower refinement, not missing
-features — the "Not modeled" note under Invite-link registration
-(single-use tokens, rate-limiting).
+Board (§6.9), the per-cohort media-access grant for trainers under
+Access Control above, and rate-limiting on `POST /api/register` under
+Invite-link registration. What's left is narrower refinement, not
+missing features — the "Not modeled" note under Invite-link registration
+(single-use tokens, deliberately left multi-use — see that section).
 
 ## Testing
 
