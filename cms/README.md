@@ -324,7 +324,29 @@ missing features — the "Not modeled" note under Invite-link registration
 ```bash
 npm run test:int   # Vitest, runs against SQLite
 npm run test:e2e   # Playwright
+npm run lint       # ESLint
 ```
+
+`npm run lint` used to crash outright ("TypeError: Converting circular
+structure to JSON") rather than report findings. `eslint.config.mjs` was
+using `FlatCompat.extends('next/core-web-vitals', 'next/typescript')` —
+the older pattern for eslintrc-style shareable configs — but
+`eslint-config-next` (as of Next.js 16, which also removed `next lint`)
+now ships native flat configs directly. Running an already-flat config
+through `FlatCompat`'s legacy validator tripped a schema-validation error
+it then couldn't even report, because formatting that error meant
+`JSON.stringify`-ing `eslint-plugin-react`'s flat preset, which contains
+a deliberate self-reference (`configs.flat.recommended.plugins.react`
+pointing back to the plugin itself). Fixed by importing
+`eslint-config-next/core-web-vitals` and `eslint-config-next/typescript`
+directly, per Next's current docs
+(`node_modules/next/dist/docs/01-app/03-api-reference/05-config/03-eslint.md`).
+Also fixed the one real error it then surfaced — an internal
+`/talent-board` link using a plain `<a>` instead of `next/link`'s
+`<Link>` (`@next/next/no-html-link-for-pages`) — verified against the
+real dev server that the link still renders and navigates correctly.
+`npm run lint` now exits 0 (a handful of pre-existing unused-var warnings
+remain in scaffold/example files, which don't fail the command).
 
 ## Type generation
 
