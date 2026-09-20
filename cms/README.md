@@ -51,7 +51,7 @@ Mapped from the proposal's data model (§5):
 | `evaluations` | §6.5 |
 | `workplans` | §5 |
 | `documents` | §6.7 |
-| `media`, `files`, `media-assets` | uploads (general / documents / consent-tracked cohort media, §6.4) |
+| `media`, `files`, `media-assets` | uploads (general / documents / consent-tracked cohort media, §6.4, gated per `Cohorts.mediaAccessGrantedTo`) |
 | `alumni-profiles` | §6.9, §6.10 |
 | `announcements` | §6.10 |
 
@@ -66,16 +66,61 @@ interns", "trainer may only see their own modules"). Sensitive fields
 locked to admin-only write via field-level access. Covered by
 `tests/int/access.int.spec.ts`.
 
-Known gaps, called out in comments at their collection:
+`Files` and `Announcements` read access started as "any authenticated
+user" — a known gap, since fixed (see below), as was the §4 "media
+library access… unless granted per cohort" trainer exception (also
+below). No further documented gaps remain.
 
-- The §4 "media library access… unless granted per cohort" trainer
-  exception isn't modeled (`MediaAssets` is admin-only for now)
-- `Files` read access is any-authenticated-user rather than scoped through
-  the referencing Contract/Document/ModuleNote, since that needs a
-  cross-collection join per request (see comment in `Files.ts`)
-- `Announcements` read is any-authenticated-user rather than
-  alumni-specific, since "alumni" is an `Enrollment.outcome` value, not a
-  `Users.role` this schema can filter collection access by
+### Files & Announcements read scoping
+
+`Files` (`src/collections/Files.ts`) is shared plumbing under Contracts,
+Documents, and ModuleNotes — each already scopes who may reference a
+given row (e.g. only a document's own intern), but the *file itself* was
+readable by any authenticated user. `getAccessibleFileIds`
+(`src/access/scoping.ts`) now resolves the actual set of File ids a user
+is entitled to by walking those same relationships (plus their own
+uploads) — e.g. a trainer can read the file attached to *their own*
+contract even though admin uploaded it, but not an unrelated intern's
+statutory documents.
+
+`Announcements` read was similarly wide open; §4's "Alumni Hub
+announcements" implies alumni-only reading, but "alumni" isn't a
+`Users.role` — it's `Enrollment.outcome` being `graduated` or `resigned`
+(§6.1: "both still share the same Alumni Hub access"). `getAlumniInternIds`
+closes that: a still-in-progress intern, trainer, or supervisor gets 403;
+a graduated or resigned alum (or admin) reads normally.
+
+Verified against the real dev server, not just tests: a trainer got a 200
+reading their own contract's file and a 404 on an unrelated intern's
+document file; a still-in-progress intern got 403 on an announcement a
+graduated alum could read with 200. Covered by
+`tests/int/filesAndAnnouncements.int.spec.ts`.
+
+### Per-cohort media-access grant for trainers
+
+§4's Media library row grants Admin full access and Trainer none —
+"unless granted per cohort". `MediaAssets` previously had no way to model
+that grant, so it was admin-only outright. `Cohorts.mediaAccessGrantedTo`
+(a `hasMany` relationship to `users`, filtered to `role: trainer`) is now
+that per-cohort allowlist — admin picks which trainers, if any, can see a
+given cohort's media library; `getMediaGrantedCohortIds`
+(`src/access/scoping.ts`) resolves which cohorts a given trainer has been
+granted into.
+
+This also gives `MediaAssets.visibilityScope` real access-control meaning
+for the first time: a granted trainer can only read `cohort-extended`
+assets in a cohort they're listed on — `admin-only` assets in that same
+cohort stay admin-exclusive. An ungranted trainer, and every other role,
+gets nothing. `create`/`update`/`delete` remain admin-only — the matrix
+only grants trainers viewing, not management.
+
+Verified against the real dev server: a granted trainer got 200 reading a
+`cohort-extended` asset in their granted cohort and 404 on an `admin-only`
+asset in that same cohort; an ungranted trainer got 403 on the same
+`cohort-extended` asset; the granted trainer's list endpoint returned only
+the one asset they're entitled to (admin's list returned both); a PATCH by
+the granted trainer was rejected with 403. Covered by
+`tests/int/mediaAssets.int.spec.ts`.
 
 ## Workflow guards
 
@@ -141,17 +186,121 @@ polished public site is still future work (see below).
 
 Not modeled: single-use tokens (an invite can register multiple accounts
 until it expires or is revoked, matching "anyone with it can create an
-account"); rate-limiting the endpoint.
+account"); rate-limiting the endpoint. The invite link itself is still
+console-only (see below) — emailing it to a specific address isn't wired
+up, since an Invite isn't tied to any one recipient.
 
-## Not yet implemented
+## Email & session reminders (§6.3)
 
-This is a data-model scaffold. Still to build, per the proposal:
+`src/email/adapter.ts` configures Payload's `email` config via
+`@payloadcms/email-nodemailer`. With `SMTP_HOST` set, it sends through
+real SMTP (`SMTP_PORT`/`SMTP_SECURE`/`SMTP_USER`/`SMTP_PASS`,
+`EMAIL_FROM`). With no `SMTP_HOST` (the default), it uses nodemailer's
+`jsonTransport` — mail is composed and "sent" without touching the
+network, safe for dev/tests. This deliberately does *not* use
+nodemailer's built-in ethereal.email test-account fallback: that makes a
+live network call on every `getPayload()` init, and a blocked or failed
+one would break the whole app (including CI).
 
-- Email reminders job queue (§6.3) — also needed to actually email the
-  invite link above once an email adapter is wired up
-- Public Talent Board frontend (§6.9) — the API-level access rules
-  (opted-in-only for public) are in place
-- Excel export endpoints (§6.11)
+`src/jobs/sendSessionReminder.ts` is a Payload job-queue task; the
+`scheduleSessionReminder` / `resetReminderStatusOnReschedule` hooks
+(`src/hooks/sessionReminders.ts`, on `TrainingSessions`) queue it:
+
+- On create, for 2 hours before `scheduledDate` (§6.3) — or immediately
+  if that time has already passed.
+- On reschedule, a fresh job for the *new* time. Rather than tracking and
+  cancelling the old job, the task itself detects it's been superseded
+  (its captured `scheduledDateAtQueueTime` no longer matches the
+  session's current one) and no-ops — see the comment in that file.
+- Also on reschedule, if interns were already notified under the old
+  time: an immediate "rescheduled" notice (§6.3's "should trigger an
+  automatic re-notification"), queued for prompt pickup rather than sent
+  inline from the hook, same as every other reminder.
+
+Jobs are queued, not sent synchronously, so a slow mail provider never
+blocks the request that created/rescheduled a session, and retries are
+Payload's job-queue retry rather than hand-rolled. `jobs.autoRun` (every
+minute) actually processes the queue — disabled under Vitest so its
+interval doesn't keep test processes alive, and per Payload's own
+guidance not meant for serverless platforms, which lines up with §7's
+"hosting is a persistent server process" decision. Verified against the
+real dev server (not just tests): a session's reminder job was queued,
+`autoRun`'s cron picked it up autonomously about a minute later, and
+`reminderStatus` flipped to `sent` with no manual trigger. Covered by
+`tests/int/reminders.int.spec.ts`.
+
+## Excel exports (§6.11)
+
+`GET /api/export/:collection` — admin-only (§4 "Bulk export"), returns a
+real `.xlsx` download built with `exceljs`. `src/exports/registry.ts`
+defines the exportable collections (`users`, `enrollments`, `contracts`,
+`training-sessions`, `scores`, `evaluations`, `logbook-entries`,
+`documents`, `alumni-profiles`) with a hand-written, human-readable
+column list per collection — relationships resolve to a display name
+(via depth: 1 population) rather than a raw ID, since that's what makes
+a spreadsheet actually useful to open. It's not a generic "dump every
+field of every collection" exporter on purpose: that would surface raw
+IDs/JSON for relationships and nested groups, and silently reshape the
+spreadsheet whenever a field is added.
+
+`?cohort=<id>` narrows collections that carry a `cohort` field (e.g.
+exporting one cohort's roster before closing it, §6.1) — visit
+`/api/export/enrollments?cohort=<id>` while logged into `/admin` in the
+same browser (session cookie carries over). §6.11 confirmed Excel as the
+only v1 export destination — no Google Drive/OAuth integration.
+
+Verified against the real dev server, not just the test suite: logged in
+through the actual admin UI, downloaded a real `.xlsx` via the browser's
+authenticated session, and opened it back up to confirm the data
+round-trips correctly; confirmed a non-admin session gets 403. Covered by
+`tests/int/exports.int.spec.ts`.
+
+## Public Talent Board (§6.9)
+
+`/talent-board` (list) and `/talent-board/[id]` (detail) are plain
+server-rendered pages — no client-side data fetching, so there's nothing
+for a public visitor to bypass. Both fetch through the local API with
+`overrideAccess: false, user: null`, i.e. exactly the access rules an
+anonymous API request would get (`AlumniProfiles.readAccess`), not a
+separately-maintained "public" query that could drift out of sync.
+
+Public fields shown: profile photo, name, courses, work experience, and
+the narrative bio (§6.9); email/phone appear only when the alum included
+them. View-only — no messaging UI. Instead there's a static "contact us"
+mailto link (`ADMIN_CONTACT_EMAIL`) on both pages, matching "Employers…
+contact admin directly… admin acts as the intermediary."
+
+Building this surfaced a real gap in the access control from the earlier
+pass: `AlumniProfiles.readAccess` checked `optedIn` but never the linked
+intern's `Enrollment.outcome`, even though §6.1 explicitly says Talent
+Board eligibility should be limited to actual graduates ("Resigned
+(non-completing) alumni are flagged internally as distinct from graduated
+alumni, so Talent Board eligibility can be limited to actual graduates").
+Fixed now via `getGraduatedInternIds` (`src/access/scoping.ts`) — a
+resigned-but-opted-in alum can still read/edit their own profile (Alumni
+Hub access, §6.10 — unaffected), but is excluded from what anyone else,
+public included, can see; confirmed as a direct 404 even by guessing
+their profile URL, not just hidden from the listing. Also added
+`AlumniProfile.name` (a §6.9 public field the schema was missing) since
+the intern's own `Users.name` isn't publicly readable and the two aren't
+meant to be the same lookup.
+
+Verified against the real dev server: an opted-in graduate appears on the
+listing and detail page as an anonymous visitor; an opted-in *resigned*
+alum is absent from the listing and 404s on direct link; the graduate's
+photo, bio, courses, and work experience all render correctly. Covered by
+`tests/int/talentBoard.int.spec.ts`.
+
+## Status
+
+Every feature in the proposal's phased rollout (§8) is now built: the
+full data model (§5), access control (§4), contract lifecycle &
+cohort-closing guards (§6.1, §6.4), invite-link registration (§6.2),
+session reminders (§6.3), Excel exports (§6.11), and the public Talent
+Board (§6.9), and the per-cohort media-access grant for trainers under
+Access Control above. What's left is narrower refinement, not missing
+features — the "Not modeled" note under Invite-link registration
+(single-use tokens, rate-limiting).
 
 ## Testing
 

@@ -1,13 +1,21 @@
-import type { CollectionConfig } from 'payload'
+import type { Access, CollectionConfig } from 'payload'
 
-import { isAdmin, isAuthenticated } from '../access/roles'
+import { hasRole, isAdmin } from '../access/roles'
+import { getAlumniInternIds } from '../access/scoping'
 
-// §4 "Alumni Hub announcements": Admin only (authoring). Read is opened to
-// any authenticated user rather than alumni-only, since the matrix doesn't
-// define a separate "Alumni" role — Alumni Hub access is really "any
-// graduated/resigned intern" (§6.1), which isn't a role this schema can
-// filter by at the collection-access level (it's an Enrollment.outcome
-// value, not a Users.role). Flagged as a possible refinement.
+const readAccess: Access = async ({ req: { user, payload } }) => {
+  if (hasRole(user, 'admin')) return true
+  if (!user) return false
+  const alumniInternIds = await getAlumniInternIds(payload)
+  return alumniInternIds.includes(user.id)
+}
+
+// §4 "Alumni Hub announcements": Admin only (authoring). Read is scoped to
+// admin plus actual Alumni Hub members — graduated or resigned interns
+// (§6.1: "both still share the same Alumni Hub access") — via
+// getAlumniInternIds, rather than any authenticated user. A
+// still-in-progress intern, trainer, or supervisor has no Alumni Hub to
+// read announcements in.
 export const Announcements: CollectionConfig = {
   slug: 'announcements',
   admin: {
@@ -16,7 +24,7 @@ export const Announcements: CollectionConfig = {
   },
   access: {
     create: isAdmin,
-    read: isAuthenticated,
+    read: readAccess,
     update: isAdmin,
     delete: isAdmin,
   },

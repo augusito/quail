@@ -86,6 +86,7 @@ export interface Config {
     'alumni-profiles': AlumniProfile;
     announcements: Announcement;
     'payload-kv': PayloadKv;
+    'payload-jobs': PayloadJob;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
     'payload-migrations': PayloadMigration;
@@ -111,6 +112,7 @@ export interface Config {
     'alumni-profiles': AlumniProfilesSelect<false> | AlumniProfilesSelect<true>;
     announcements: AnnouncementsSelect<false> | AnnouncementsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
+    'payload-jobs': PayloadJobsSelect<false> | PayloadJobsSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
     'payload-migrations': PayloadMigrationsSelect<false> | PayloadMigrationsSelect<true>;
@@ -127,7 +129,13 @@ export interface Config {
   };
   user: User;
   jobs: {
-    tasks: unknown;
+    tasks: {
+      sendSessionReminder: TaskSendSessionReminder;
+      inline: {
+        input: unknown;
+        output: unknown;
+      };
+    };
     workflows: unknown;
   };
 }
@@ -233,6 +241,10 @@ export interface Cohort {
   startDate: string;
   endDate: string;
   status: 'draft' | 'open' | 'active' | 'closed';
+  /**
+   * §4 "Media library access… unless granted per cohort" — trainers listed here can view this cohort's cohort-extended media-assets (MediaAssets.ts). Admin-only assets stay admin-only regardless.
+   */
+  mediaAccessGrantedTo?: (number | User)[] | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -482,6 +494,10 @@ export interface MediaAsset {
 export interface AlumniProfile {
   id: number;
   intern: number | User;
+  /**
+   * The public Talent Board display name (§6.9 public field) — separate from Users.name, since the intern's account isn't publicly readable.
+   */
+  name: string;
   photo?: (number | null) | Media;
   employmentStatus?: string | null;
   /**
@@ -541,6 +557,98 @@ export interface PayloadKv {
     | number
     | boolean
     | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payload-jobs".
+ */
+export interface PayloadJob {
+  id: number;
+  /**
+   * Input data provided to the job
+   */
+  input?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  taskStatus?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  completedAt?: string | null;
+  totalTried?: number | null;
+  /**
+   * If hasError is true this job will not be retried
+   */
+  hasError?: boolean | null;
+  /**
+   * If hasError is true, this is the error that caused it
+   */
+  error?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  /**
+   * Task execution log
+   */
+  log?:
+    | {
+        executedAt: string;
+        completedAt: string;
+        taskSlug: 'inline' | 'sendSessionReminder';
+        taskID: string;
+        input?:
+          | {
+              [k: string]: unknown;
+            }
+          | unknown[]
+          | string
+          | number
+          | boolean
+          | null;
+        output?:
+          | {
+              [k: string]: unknown;
+            }
+          | unknown[]
+          | string
+          | number
+          | boolean
+          | null;
+        state: 'failed' | 'succeeded';
+        error?:
+          | {
+              [k: string]: unknown;
+            }
+          | unknown[]
+          | string
+          | number
+          | boolean
+          | null;
+        id?: string | null;
+      }[]
+    | null;
+  taskSlug?: ('inline' | 'sendSessionReminder') | null;
+  queue?: string | null;
+  waitUntil?: string | null;
+  processing?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -735,6 +843,7 @@ export interface CohortsSelect<T extends boolean = true> {
   startDate?: T;
   endDate?: T;
   status?: T;
+  mediaAccessGrantedTo?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -938,6 +1047,7 @@ export interface MediaAssetsSelect<T extends boolean = true> {
  */
 export interface AlumniProfilesSelect<T extends boolean = true> {
   intern?: T;
+  name?: T;
   photo?: T;
   employmentStatus?: T;
   courses?:
@@ -981,6 +1091,37 @@ export interface PayloadKvSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payload-jobs_select".
+ */
+export interface PayloadJobsSelect<T extends boolean = true> {
+  input?: T;
+  taskStatus?: T;
+  completedAt?: T;
+  totalTried?: T;
+  hasError?: T;
+  error?: T;
+  log?:
+    | T
+    | {
+        executedAt?: T;
+        completedAt?: T;
+        taskSlug?: T;
+        taskID?: T;
+        input?: T;
+        output?: T;
+        state?: T;
+        error?: T;
+        id?: T;
+      };
+  taskSlug?: T;
+  queue?: T;
+  waitUntil?: T;
+  processing?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-locked-documents_select".
  */
 export interface PayloadLockedDocumentsSelect<T extends boolean = true> {
@@ -1020,6 +1161,21 @@ export interface CollectionsWidget {
     [k: string]: unknown;
   };
   width: 'full';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskSendSessionReminder".
+ */
+export interface TaskSendSessionReminder {
+  input: {
+    sessionId: number;
+    scheduledDateAtQueueTime: string;
+    reason: 'reminder' | 'rescheduled';
+  };
+  output: {
+    recipientCount?: number | null;
+    skippedReason?: string | null;
+  };
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

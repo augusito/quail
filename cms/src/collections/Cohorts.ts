@@ -66,5 +66,16 @@ export const Cohorts: CollectionConfig = {
         { label: 'Closed', value: 'closed' },
       ],
     },
+    {
+      name: 'mediaAccessGrantedTo',
+      type: 'relationship',
+      relationTo: 'users',
+      hasMany: true,
+      filterOptions: { role: { equals: 'trainer' } },
+      admin: {
+        description:
+          '§4 "Media library access… unless granted per cohort" — trainers listed here can view this cohort\'s cohort-extended media-assets (MediaAssets.ts). Admin-only assets stay admin-only regardless.',
+      },
+    },
   ],
 }

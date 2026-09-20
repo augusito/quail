@@ -50,7 +50,7 @@ export default function RegisterPage() {
 
   if (!token) {
     return (
-      <main style={{ maxWidth: 420, margin: '4rem auto', padding: '0 1rem', fontFamily: 'sans-serif' }}>
+      <main style={{ maxWidth: 420, margin: '4rem auto', padding: '0 1rem', fontFamily: 'sans-serif', background: '#fff', color: '#111', minHeight: '100vh' }}>
         <h1>Invalid invite link</h1>
         <p>This link is missing an invite token. Ask your program admin for a fresh invite link.</p>
       </main>
@@ -59,7 +59,7 @@ export default function RegisterPage() {
 
   if (status === 'success') {
     return (
-      <main style={{ maxWidth: 420, margin: '4rem auto', padding: '0 1rem', fontFamily: 'sans-serif' }}>
+      <main style={{ maxWidth: 420, margin: '4rem auto', padding: '0 1rem', fontFamily: 'sans-serif', background: '#fff', color: '#111', minHeight: '100vh' }}>
         <h1>You&rsquo;re registered</h1>
         <p>{message}</p>
       </main>
@@ -67,7 +67,7 @@ export default function RegisterPage() {
   }
 
   return (
-    <main style={{ maxWidth: 420, margin: '4rem auto', padding: '0 1rem', fontFamily: 'sans-serif' }}>
+    <main style={{ maxWidth: 420, margin: '4rem auto', padding: '0 1rem', fontFamily: 'sans-serif', background: '#fff', color: '#111', minHeight: '100vh' }}>
       <h1>Register</h1>
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
         <label>
