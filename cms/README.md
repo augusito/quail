@@ -22,6 +22,37 @@ Open `http://localhost:3000/admin` and follow the prompts to create your
 first admin user. `.env` defaults to SQLite (`PAYLOAD_DATABASE=sqlite`), so
 no database setup is required locally.
 
+## Demo data
+
+```bash
+npm run seed             # populate a fresh DB
+npm run seed -- --reset  # wipe prior seed data and reseed
+```
+
+`scripts/seed.ts` populates one of every role, three cohorts in different
+stages (closed/active/open), and enough related records — enrollments,
+contracts, documents, scores, evaluations, logbooks, alumni profiles,
+invites, announcements, cohort media — to click through the admin panel
+and the public Talent Board and see something that isn't empty, rather
+than creating a first admin user by hand and staring at empty
+collections. All accounts share one password
+(printed at the end of the run, along with each seeded account's email
+and login-worthy invite links), including one intern left in `pending`
+status to demonstrate the admin-approval queue (§6.2), and a trainer
+granted a cohort's media library (§4) to demonstrate that access grant
+end to end.
+
+Refuses to run a second time (checks for a fixed admin email) rather than
+silently duplicating data — pass `--reset` to wipe every collection this
+script seeds into and reseed from scratch. It's a local-API script with
+no `req.user`, so it bypasses both access control (`overrideAccess`,
+same as the integration tests) and the workflow guard hooks
+(`src/hooks/contractLifecycle.ts`, `src/hooks/cohortClosingChecklist.ts`
+— both already documented as skipping trusted system-level calls the same
+way) — meaning it can create a `released` contract or a `closed` cohort
+directly, without walking the state machine one step at a time the way a
+real user would through the UI.
+
 ## Switching to Postgres
 
 Set in `.env`:
@@ -318,6 +349,10 @@ Access Control above, and rate-limiting on `POST /api/register` under
 Invite-link registration. What's left is narrower refinement, not
 missing features — the "Not modeled" note under Invite-link registration
 (single-use tokens, deliberately left multi-use — see that section).
+
+Also added, outside the proposal's own feature list: a demo/seed script
+(see Demo data above) and a fix for a crash in `npm run lint` (see
+Testing below) — dev tooling, not §8 rollout items.
 
 ## Testing
 
