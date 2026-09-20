@@ -1,5 +1,19 @@
 import { APIError, type Endpoint } from 'payload'
 
+import { checkRateLimit } from '../lib/rateLimit'
+
+// Public and unauthenticated, so it's a target for token-guessing and
+// signup-flooding — cap attempts per source IP rather than trusting the
+// invite token check alone to gate cost.
+const RATE_LIMIT_MAX = 5
+const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000
+
+function getClientIp(req: { headers: Request['headers'] }): string {
+  const forwardedFor = req.headers.get('x-forwarded-for')
+  if (forwardedFor) return forwardedFor.split(',')[0]!.trim()
+  return req.headers.get('x-real-ip') || 'unknown'
+}
+
 /**
  * §6.2 self-registration: the public, unauthenticated counterpart to the
  * admin-only Invites collection. A client posts the invite token plus
@@ -18,6 +32,17 @@ export const registerEndpoint: Endpoint = {
   path: '/register',
   method: 'post',
   handler: async (req) => {
+    const rateLimit = checkRateLimit(`register:${getClientIp(req)}`, {
+      max: RATE_LIMIT_MAX,
+      windowMs: RATE_LIMIT_WINDOW_MS,
+    })
+    if (!rateLimit.allowed) {
+      return Response.json(
+        { error: 'Too many registration attempts. Please try again later.' },
+        { status: 429, headers: { 'Retry-After': String(rateLimit.retryAfterSeconds) } },
+      )
+    }
+
     let body: Record<string, unknown>
     try {
       body = ((await req.json?.()) as Record<string, unknown>) ?? {}

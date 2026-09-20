@@ -23,10 +23,19 @@ describe('POST /api/register (§6.2 invite-link self-registration)', () => {
     }
   })
 
-  async function callRegister(body: unknown) {
+  // Registration is rate-limited per source IP (src/lib/rateLimit.ts); give
+  // each test its own IP via X-Forwarded-For so they don't trip each
+  // other's limit. Tests that exercise the limiter itself pass their own.
+  let ipCounter = 0
+  function nextIp() {
+    ipCounter += 1
+    return `10.0.0.${ipCounter}`
+  }
+
+  async function callRegister(body: unknown, ip: string = nextIp()) {
     const request = new Request('http://localhost:3000/api/register', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'X-Forwarded-For': ip },
       body: JSON.stringify(body),
     })
     return handleEndpoints({ config: payloadConfig, request })
@@ -169,6 +178,37 @@ describe('POST /api/register (§6.2 invite-link self-registration)', () => {
 
     const allowedLogin = await callLogin(email, password)
     expect(allowedLogin.status).toBe(200)
+  })
+
+  describe('rate limiting (per source IP, 5 requests / 15 min)', () => {
+    it('rejects the 6th attempt from the same IP with 429 and a Retry-After header', async () => {
+      const ip = '203.0.113.1'
+      for (let i = 0; i < 5; i++) {
+        const response = await callRegister({ token: 'not-a-real-token', email: 'x@test.dev', password: 'test1234' }, ip)
+        expect(response.status).toBe(404) // under the limit: normal invalid-token handling
+      }
+
+      const limited = await callRegister({ token: 'not-a-real-token', email: 'x@test.dev', password: 'test1234' }, ip)
+      expect(limited.status).toBe(429)
+      expect(limited.headers.get('Retry-After')).toBeTruthy()
+    })
+
+    it('does not rate-limit a different IP once another is exhausted', async () => {
+      const exhaustedIp = '203.0.113.2'
+      for (let i = 0; i < 5; i++) {
+        await callRegister({ token: 'not-a-real-token', email: 'x@test.dev', password: 'test1234' }, exhaustedIp)
+      }
+      const limited = await callRegister({ token: 'not-a-real-token', email: 'x@test.dev', password: 'test1234' }, exhaustedIp)
+      expect(limited.status).toBe(429)
+
+      const { invite } = await createInvite()
+      const otherIp = '203.0.113.3'
+      const response = await callRegister(
+        { token: invite.token, email: `rate-limit-other-ip-${Date.now()}@test.dev`, password: 'test1234' },
+        otherIp,
+      )
+      expect(response.status).toBe(201)
+    })
   })
 
   it('blocks login for a deactivated (inactive) account', async () => {
