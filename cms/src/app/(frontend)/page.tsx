@@ -1,5 +1,6 @@
 import { headers as getHeaders } from 'next/headers.js'
 import Image from 'next/image'
+import Link from 'next/link'
 import { getPayload } from 'payload'
 import React from 'react'
 import { fileURLToPath } from 'url'
@@ -46,9 +47,9 @@ export default async function HomePage() {
           >
             Documentation
           </a>
-          <a className="docs" href="/talent-board">
+          <Link className="docs" href="/talent-board">
             Talent Board
-          </a>
+          </Link>
         </div>
       </div>
       <div className="footer">
