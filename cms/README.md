@@ -1,8 +1,10 @@
 # She Delivers Management System — CMS
 
 Payload CMS backend for the She Delivers cohort management system. See
-[`../she-delivers-proposal.md`](../she-delivers-proposal.md) for the full
-requirements this scaffold implements.
+[`../she-delivers-proposal_2.md`](../she-delivers-proposal_2.md) for the
+full requirements this scaffold implements — a revision of the original
+[`../she-delivers-proposal.md`](../she-delivers-proposal.md); where this
+README says "the proposal" it means the current, revised one.
 
 ## Stack
 
@@ -39,20 +41,22 @@ Mapped from the proposal's data model (§5):
 
 | Collection | Proposal ref |
 | --- | --- |
-| `users` | §4 roles: admin / trainer / intern / supervisor |
+| `users` | §4 roles: admin / trainer / intern / supervisor — auth/role anchor for every role |
+| `trainers`, `interns` | §5, §6.2 — richer profile data collected at self-registration, additive 1:1 extensions of `users` (see Access control below) |
+| `education` | §5, §6.2 — an intern's repeatable qualification history, linked to `interns` |
 | `cohorts` | §6.1 |
 | `enrollments` | §6.1 |
-| `invites` | §6.2 |
+| `invites` | §6.2 — dual-role (intern/trainer), email-personalized, single-use |
 | `contracts` | §6.4 |
-| `modules`, `training-sessions` | §6.3, §6.4 |
-| `module-notes` | §6.4 |
+| `modules`, `sessions` | §6.3, §6.4 (`sessions` renamed from `training-sessions` — §5's naming notes) |
+| `notes` | §6.4 (renamed from `module-notes`) |
 | `scores` | §6.5 |
-| `logbook-entries` | §6.6 |
+| `logbooks` | §6.6 (renamed from `logbook-entries`; no more separate supervisor-authored rollup entries — see below) |
 | `evaluations` | §6.5 |
 | `workplans` | §5 |
-| `documents` | §6.7 |
-| `media`, `files`, `media-assets` | uploads (general / documents / consent-tracked cohort media, §6.4, gated per `Cohorts.mediaAccessGrantedTo`) |
-| `alumni-profiles` | §6.9, §6.10 |
+| `documents` | §6.7 — holds the proof file only; the ID/KRA PIN/SHIF/NSSF numbers themselves live on `trainers`/`interns` |
+| `images`, `files`, `media` | uploads (generic images / documents / consent-tracked cohort media, §6.4, gated per `Cohorts.mediaAccessGrantedTo`) — `images` renamed from `media`, `media` renamed from `media-assets` (see Access control below) |
+| `alumnae` | §6.9, §6.10 (renamed from `alumni-profiles`) |
 | `announcements` | §6.10 |
 
 ## Access control
@@ -71,10 +75,63 @@ user" — a known gap, since fixed (see below), as was the §4 "media
 library access… unless granted per cohort" trainer exception (also
 below). No further documented gaps remain.
 
+### Trainer / Intern / Education profiles (§5, §6.2, §7)
+
+Proposal v2 splits the richer registration-time profile data (personal,
+contact, statutory numbers, next of kin, education history) out of
+`Users` into two new collections, `Trainer` (`src/collections/Trainer.ts`)
+and `Intern` (`src/collections/Intern.ts`), each a `user` relationship
+back to a `users` row (unique — one profile per account) rather than a
+replacement for it. Every existing collection that references "trainer"
+or "intern" (Contracts, Sessions, Documents, Scores, ...) keeps relating
+to `users` directly, exactly as before — `Trainer`/`Intern` are additive,
+not a foundational schema change to how the rest of the app models
+people. `Education` (`src/collections/Education.ts`) is a third,
+separate collection for an intern's repeatable qualification history,
+relating to `Intern` (not `users`) since it's specifically part of that
+richer profile.
+
+Access: admin sees/edits every row; everyone else only their own (via
+`user` on Trainer/Intern, or the owning `Intern` row on Education) — §4's
+"Register/manage own profile". Building this surfaced a real Payload
+quirk: `create` access functions that return a `Where` constraint (the
+`adminOrRoleOwnsField` helper, used throughout this codebase, e.g. on
+`ModuleNotes`/`Note`) are **not** actually validated against the
+submitted data for `create` operations — Payload only checks the result
+is truthy (confirmed by reading
+`node_modules/payload/dist/collections/operations/create.js`:
+`executeAccess`'s resolved constraint is awaited and discarded for
+`create`, unlike `read`/`update`/`delete` where it's merged into the
+query). A test asserting an intern couldn't create an Education row
+under someone else's profile caught this: the naive
+`adminOrRoleOwnsField`-style `create` access would have let them. Fixed
+with a new `adminOrRoleOwnsFieldOnCreate` (`src/access/roles.ts`, with
+the mechanism documented in its own comment) that explicitly checks
+`data.<field>` against the caller's id, used for `Trainer`/`Intern`'s own
+`create` access and inlined the same way for `Education`'s. (The
+pre-existing collections using the unsafe pattern for `create` —
+`Note`, `Documents`, `Workplans`, `Alumna` — predate this revision and
+are unaffected by it in practice today, since every real write path to
+them either goes through `overrideAccess` or a UI where a user has no
+reason to submit someone else's id; flagged as a follow-up rather than
+fixed here, to keep this change to what the proposal revision asked
+for.)
+
+§7 "sensitive personal data" (`dateOfBirth`, `nationalIdNumber`,
+`kraPin`, `shifNumber`, `nssfNumber`): row-level access above already
+limits reads to admin or the person themself, so there's no other reader
+inside the app to restrict further. The actual requirement — "not
+exposed in bulk exports or on the public talent board" — is satisfied by
+construction: the `trainers`/`interns` export definitions
+(`src/exports/registry.ts`) simply never list those columns, and the
+public `Alumna` never references `Trainer`/`Intern` at all (see Excel
+exports and Public Talent Board below). Covered by
+`tests/int/profiles.int.spec.ts`.
+
 ### Files & Announcements read scoping
 
 `Files` (`src/collections/Files.ts`) is shared plumbing under Contracts,
-Documents, and ModuleNotes — each already scopes who may reference a
+Documents, and Notes — each already scopes who may reference a
 given row (e.g. only a document's own intern), but the *file itself* was
 readable by any authenticated user. `getAccessibleFileIds`
 (`src/access/scoping.ts`) now resolves the actual set of File ids a user
@@ -99,15 +156,16 @@ graduated alum could read with 200. Covered by
 ### Per-cohort media-access grant for trainers
 
 §4's Media library row grants Admin full access and Trainer none —
-"unless granted per cohort". `MediaAssets` previously had no way to model
-that grant, so it was admin-only outright. `Cohorts.mediaAccessGrantedTo`
-(a `hasMany` relationship to `users`, filtered to `role: trainer`) is now
-that per-cohort allowlist — admin picks which trainers, if any, can see a
-given cohort's media library; `getMediaGrantedCohortIds`
-(`src/access/scoping.ts`) resolves which cohorts a given trainer has been
-granted into.
+"unless granted per cohort". `Media` (`src/collections/Media.ts`,
+renamed from `MediaAssets` — see the naming note below) previously had no
+way to model that grant, so it was admin-only outright.
+`Cohorts.mediaAccessGrantedTo` (a `hasMany` relationship to `users`,
+filtered to `role: trainer`) is now that per-cohort allowlist — admin
+picks which trainers, if any, can see a given cohort's media library;
+`getMediaGrantedCohortIds` (`src/access/scoping.ts`) resolves which
+cohorts a given trainer has been granted into.
 
-This also gives `MediaAssets.visibilityScope` real access-control meaning
+This also gives `Media.visibilityScope` real access-control meaning
 for the first time: a granted trainer can only read `cohort-extended`
 assets in a cohort they're listed on — `admin-only` assets in that same
 cohort stay admin-exclusive. An ungranted trainer, and every other role,
@@ -120,7 +178,16 @@ asset in that same cohort; an ungranted trainer got 403 on the same
 `cohort-extended` asset; the granted trainer's list endpoint returned only
 the one asset they're entitled to (admin's list returned both); a PATCH by
 the granted trainer was rejected with 403. Covered by
-`tests/int/mediaAssets.int.spec.ts`.
+`tests/int/media.int.spec.ts`.
+
+**Naming note (proposal v2, §5):** the entity this proposal calls
+`Media` — the cohort media library above — collided with what used to be
+this app's slug for generic image uploads (Talent Board photos, rich
+text embeds). Rather than rename the proposal's own entity, the old
+generic-uploads collection moved to `Images` (`src/collections/Images.ts`,
+slug `images`) to free up the name, since it's implementation-only
+plumbing with no §5 entity of its own. `Alumna.photo` (see Public Talent
+Board below) now relates to `images`.
 
 ## Workflow guards
 
@@ -151,23 +218,79 @@ made with no `req.user`, e.g. seed/migration scripts) the same way access
 control is bypassed by `overrideAccess: true`. Covered by
 `tests/int/lifecycle.int.spec.ts`.
 
+## Logbooks (§6.6)
+
+Proposal v2 drops the v1 supervisor-authored "Mentor Driver" rollup
+entries entirely: "the sample driver logbook's second sheet... is
+dropped: not needed... Each intern keeps a single logbook, self-authored,
+with the Supervisor reviewing and commenting (§4) — no separate rollup
+log." `Logbook` (`src/collections/Logbook.ts`, renamed from
+`LogbookEntry`) reflects that: no `author` field, no `supervisorRollup`
+group, and `create` access no longer grants supervisors anything (they
+review/comment on the intern's own entries via the existing
+`supervisorComment` field, itself already locked to
+admin/supervisor-only write). An intern still creates and owns their
+entries; admin and the intern's assigned supervisor still read them —
+unchanged from v1.
+
 ## Invite-link registration (§6.2)
 
-Admin creates an `Invites` record (`cohort` + `track` — a cohort can run
-multiple tracks in parallel, §6.1, so an invite is scoped to one). A
-`beforeChange` hook auto-generates the `token` and sets `expiresAt` 24h out
-(§6.2); an `afterChange` hook logs the resulting link —
-**email integration isn't implemented yet, so this is console-only** for
-now (`[invite] cohort=... track=... link=http://.../register?token=...`,
-via `payload.logger.info`, wired to `PAYLOAD_PUBLIC_SERVER_URL` if set).
+Proposal v2 changed this significantly from v1: **both interns and
+trainers now self-register**, via an invite personalized to one email
+address, rather than interns-only via a shareable per-cohort/track link.
 
-`POST /api/register` (`src/endpoints/register.ts`) is the public,
-unauthenticated counterpart: given `{ token, email, password, name? }`, it
-validates the invite (exists, not revoked, not expired), then creates the
-User and its Enrollment on the registrant's behalf via `overrideAccess`
-(both collections are otherwise admin-only). `role` and `status` are
-always hardcoded server-side (`intern` / `pending`) — never read from the
-request body, so a registrant can't self-assign a role or skip approval.
+Admin creates an `Invites` record: `cohort`, `role` (intern/trainer),
+`email`, and `track` (intern invites only — `admin.condition` hides it
+for trainer invites, and a field `validate` requires it when
+`role: intern`). A `beforeChange` hook auto-generates the `token` and
+sets `expiresAt` 24h out (§6.2); an `afterChange` hook logs the resulting
+link — **email integration isn't implemented yet, so this is
+console-only** for now (`[invite] cohort=... role=... email=... track=...
+link=http://.../register?token=...`, via `payload.logger.info`, wired to
+`PAYLOAD_PUBLIC_SERVER_URL` if set).
+
+`status` (`sent` / `used` / `expired` / `revoked`) replaces v1's plain
+`revoked` checkbox — this is what makes the invite genuinely single-use
+now (see "Not modeled" below for why v1 was deliberately left multi-use
+and why that reasoning no longer applies).
+
+### `/api/register` (`src/endpoints/register.ts`)
+
+Two routes at the same path, both public and unauthenticated:
+
+- **`GET /api/register?token=...`** — looks up the invite and returns
+  `{ role, email, cohortName, track }`, so the registration form
+  (`src/app/(frontend)/register/page.tsx`) knows which field set to show
+  and can display the target email *before* the person types anything.
+  Never returns anything beyond that — no profile data exists yet at
+  this point.
+- **`POST /api/register`** — given `{ token, password, ...profile }`,
+  validates the invite (exists, not used/revoked/expired — lazily
+  flipping a stale `sent` invite to `expired` the same "plain validation
+  logic, no workflow engine" way the contract-lifecycle and
+  cohort-closing guards work, §6.1/§6.4/§10), then creates the User and
+  the role-appropriate records on the registrant's behalf via
+  `overrideAccess` (all otherwise admin-only):
+  - **intern** → an `Intern` profile row (name, DOB, gender, nationality,
+    contact, statutory numbers, next of kin) + zero or more `Education`
+    rows + an `Enrollment` in the invite's cohort/track, same as v1.
+  - **trainer** → a `Trainer` profile row (name, occupation, contact,
+    statutory numbers) + a **Draft** `Contract` for the invite's cohort —
+    the concrete form "trainers are associated with that cohort ahead of
+    their contract" (§6.2/§6.4) takes: a Draft contract is the natural
+    next step for admin (upload terms, move to Sent), and `Contract`
+    already models trainer+cohort.
+
+  `role` and the account **`email` always come from the invite record,
+  never the request body** — a registrant cannot self-assign a role,
+  register under a different email than the one admin invited, or skip
+  the pending-approval step by sending extra fields. Required
+  fields differ by role (see `internBody`/`trainerBody` in
+  `tests/int/register.int.spec.ts` for the exact field lists); missing
+  ones return `400` naming which fields. On success the invite's
+  `status` flips to `used`, so the same token can never register a
+  second account.
+
 Admin reviews `status: pending` users and flips them to `active` through
 the existing Users collection (already admin-only, no extra guard needed
 for *who* can approve). A `beforeLogin` hook
@@ -179,32 +302,33 @@ self-registered account straight in. Covered by
 `tests/int/register.int.spec.ts`, including the full approval loop:
 register → blocked login → admin sets `status: active` → login succeeds.
 
-The logged link points at `/register?token=...`, a minimal client-side
-form (`src/app/(frontend)/register/page.tsx`) that reads the token from
-the URL and posts to the endpoint above — functional, not styled; the
-polished public site is still future work (see below).
+The logged link points at `/register?token=...` — a minimal client-side
+form that fetches the `GET` lookup on mount, then renders the
+role-appropriate field set (including a repeatable "add education" list
+for interns) and posts to `POST` above — functional, not styled; the
+polished public site is still future work.
 
-`POST /api/register` is rate-limited per source IP — `checkRateLimit`
-(`src/lib/rateLimit.ts`), a small in-memory fixed-window limiter keyed by
-`X-Forwarded-For` (falling back to `X-Real-IP`, then a shared `unknown`
-bucket for direct/local requests with neither header) — capped at 5
-requests per 15 minutes; over the limit returns `429` with a
-`Retry-After` header. It's in-process state, so it resets on redeploy and
-doesn't share state across multiple app instances — fine for this app's
-current single-instance deployment, but would need a shared store (e.g.
-Redis) behind a load balancer. Covered by the "rate limiting" describe
-block in `tests/int/register.int.spec.ts`, and verified against the real
-dev server: 5 requests with a bogus token returned `404` (normal
-invalid-token handling) as expected, the 6th returned `429` with
-`Retry-After: 900`, and a request from a different IP was unaffected.
+`POST /api/register` (and the `GET` lookup, separately) is rate-limited
+per source IP — `checkRateLimit` (`src/lib/rateLimit.ts`), a small
+in-memory fixed-window limiter keyed by `X-Forwarded-For` (falling back
+to `X-Real-IP`, then a shared `unknown` bucket for direct/local requests
+with neither header) — capped at 5 requests per 15 minutes; over the
+limit returns `429` with a `Retry-After` header. It's in-process state,
+so it resets on redeploy and doesn't share state across multiple app
+instances — fine for this app's current single-instance deployment, but
+would need a shared store (e.g. Redis) behind a load balancer. Covered
+by the "rate limiting" describe block in `tests/int/register.int.spec.ts`,
+and verified against the real dev server: 5 requests with a bogus token
+returned `404` (normal invalid-token handling) as expected, the 6th
+returned `429` with `Retry-After: 900`, and a request from a different IP
+was unaffected.
 
-Not modeled: single-use tokens. An invite can still register multiple
-accounts until it expires or is revoked — left this way deliberately,
-since it matches the proposal's own wording ("anyone with it can create
-an account"): one invite per open cohort/track, shared with everyone
-registering into it, not a single-recipient token. The invite link itself
-is still console-only (see above) — emailing it to a specific address
-isn't wired up, since an Invite isn't tied to any one recipient.
+**Single-use tokens are now modeled** (they weren't in v1): proposal v2's
+own wording changed from "anyone with it can create an account" (one
+shared link per cohort/track) to "only that email address can complete
+registration with it" (one invite per person) — so the v1 README note
+explaining why single-use was deliberately *not* built no longer applies;
+it's built now, via `status: used` above.
 
 ## Email & session reminders (§6.3)
 
@@ -220,7 +344,7 @@ one would break the whole app (including CI).
 
 `src/jobs/sendSessionReminder.ts` is a Payload job-queue task; the
 `scheduleSessionReminder` / `resetReminderStatusOnReschedule` hooks
-(`src/hooks/sessionReminders.ts`, on `TrainingSessions`) queue it:
+(`src/hooks/sessionReminders.ts`, on `Session`) queue it:
 
 - On create, for 2 hours before `scheduledDate` (§6.3) — or immediately
   if that time has already passed.
@@ -249,15 +373,25 @@ real dev server (not just tests): a session's reminder job was queued,
 
 `GET /api/export/:collection` — admin-only (§4 "Bulk export"), returns a
 real `.xlsx` download built with `exceljs`. `src/exports/registry.ts`
-defines the exportable collections (`users`, `enrollments`, `contracts`,
-`training-sessions`, `scores`, `evaluations`, `logbook-entries`,
-`documents`, `alumni-profiles`) with a hand-written, human-readable
+defines the exportable collections (`users`, `trainers`, `interns`,
+`enrollments`, `contracts`, `sessions`, `scores`, `evaluations`,
+`logbooks`, `documents`, `alumnae`) with a hand-written, human-readable
 column list per collection — relationships resolve to a display name
 (via depth: 1 population) rather than a raw ID, since that's what makes
 a spreadsheet actually useful to open. It's not a generic "dump every
 field of every collection" exporter on purpose: that would surface raw
 IDs/JSON for relationships and nested groups, and silently reshape the
 spreadsheet whenever a field is added.
+
+This hand-written-column approach is also what satisfies §7's new "not
+exposed in bulk exports" requirement (proposal v2) for `Trainer`/`Intern`'s
+sensitive fields (`dateOfBirth`, `nationalIdNumber`, `kraPin`,
+`shifNumber`, `nssfNumber`) — the `trainers`/`interns` definitions simply
+never list those columns. Verified with a real `.xlsx`, not just by
+re-reading the column list: `tests/int/exports.int.spec.ts` seeds a
+trainer/intern with recognizable sentinel values in every sensitive
+field, exports both collections, and asserts none of those values appear
+anywhere in the resulting file bytes.
 
 `?cohort=<id>` narrows collections that carry a `cohort` field (e.g.
 exporting one cohort's roster before closing it, §6.1) — visit
@@ -277,8 +411,14 @@ round-trips correctly; confirmed a non-admin session gets 403. Covered by
 server-rendered pages — no client-side data fetching, so there's nothing
 for a public visitor to bypass. Both fetch through the local API with
 `overrideAccess: false, user: null`, i.e. exactly the access rules an
-anonymous API request would get (`AlumniProfiles.readAccess`), not a
-separately-maintained "public" query that could drift out of sync.
+anonymous API request would get (`Alumna.readAccess`,
+`src/collections/Alumna.ts` — renamed from `AlumniProfile` per §5's
+naming notes), not a separately-maintained "public" query that could
+drift out of sync. `Alumna.intern` relates to `users`, not the newer
+`Intern` profile collection (§5) — this is about which login account a
+listing belongs to, not the intern's statutory/registration data, and
+keeping it on `users` means the public Talent Board never has a path to
+the sensitive `Intern` fields (§7) even through a populated relationship.
 
 Public fields shown: profile photo, name, courses, work experience, and
 the narrative bio (§6.9); email/phone appear only when the alum included
@@ -287,7 +427,7 @@ mailto link (`ADMIN_CONTACT_EMAIL`) on both pages, matching "Employers…
 contact admin directly… admin acts as the intermediary."
 
 Building this surfaced a real gap in the access control from the earlier
-pass: `AlumniProfiles.readAccess` checked `optedIn` but never the linked
+pass: `Alumna.readAccess` checked `optedIn` but never the linked
 intern's `Enrollment.outcome`, even though §6.1 explicitly says Talent
 Board eligibility should be limited to actual graduates ("Resigned
 (non-completing) alumni are flagged internally as distinct from graduated
@@ -297,7 +437,7 @@ resigned-but-opted-in alum can still read/edit their own profile (Alumni
 Hub access, §6.10 — unaffected), but is excluded from what anyone else,
 public included, can see; confirmed as a direct 404 even by guessing
 their profile URL, not just hidden from the listing. Also added
-`AlumniProfile.name` (a §6.9 public field the schema was missing) since
+`Alumna.name` (a §6.9 public field the schema was missing) since
 the intern's own `Users.name` isn't publicly readable and the two aren't
 meant to be the same lookup.
 
@@ -315,9 +455,19 @@ cohort-closing guards (§6.1, §6.4), invite-link registration (§6.2),
 session reminders (§6.3), Excel exports (§6.11), and the public Talent
 Board (§6.9), the per-cohort media-access grant for trainers under
 Access Control above, and rate-limiting on `POST /api/register` under
-Invite-link registration. What's left is narrower refinement, not
-missing features — the "Not modeled" note under Invite-link registration
-(single-use tokens, deliberately left multi-use — see that section).
+Invite-link registration.
+
+Also built: the full proposal v2 revision — `Trainer`/`Intern`/`Education`
+profile collections and §7's sensitive-field export exclusion (Access
+control above), dual-role email-personalized single-use invites and the
+Draft-contract trainer association (Invite-link registration above), the
+`Session`/`Note`/`Logbook`/`Media`/`Alumna` renames and the
+`Media`/`Images` naming-collision resolution (§5's naming notes,
+throughout), and the dropped supervisor logbook rollup (Logbooks above).
+
+What's left is narrower refinement, not missing features — the
+"Not modeled" note under Invite-link registration (rate-limiting's
+current in-memory, single-instance-only state).
 
 ## Testing
 

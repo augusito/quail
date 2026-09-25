@@ -6,6 +6,13 @@ import { adminOnlyField, adminOrRoleOwnsField, isAdmin } from '../access/roles'
 // verification status (not just storage) lets admin track compliance.
 // §4 "Upload statutory documents": Admin (any), Intern (own). Not granted
 // to trainer/supervisor in the matrix.
+//
+// §6.7 "Numbers vs. proof" (proposal v2): this vault holds the
+// scanned/uploaded proof file only — the actual ID/KRA PIN/SHIF/NSSF
+// *numbers* live as text fields on the Trainer/Intern statutory profile
+// (§5, src/collections/Trainer.ts / Intern.ts) instead. The two are linked
+// but distinct: the number is needed for contracts/records, the document
+// here for compliance verification.
 export const Documents: CollectionConfig = {
   slug: 'documents',
   admin: {
@@ -37,7 +44,7 @@ export const Documents: CollectionConfig = {
         { label: 'National ID', value: 'national-id' },
         { label: 'Driving Licence', value: 'driving-licence' },
         { label: 'Certificate of Good Conduct', value: 'certificate-of-good-conduct' },
-        { label: 'SHA', value: 'sha' },
+        { label: 'SHA/SHIF', value: 'sha-shif' },
         { label: 'KRA PIN', value: 'kra-pin' },
         { label: 'NSSF', value: 'nssf' },
         { label: 'Other', value: 'other' },

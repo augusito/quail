@@ -49,7 +49,7 @@ describe('Session reminders (§6.3)', () => {
 
   afterAll(async () => {
     sendEmailSpy.mockRestore()
-    for (const collection of ['payload-jobs', 'training-sessions', 'enrollments', 'modules', 'cohorts'] as const) {
+    for (const collection of ['payload-jobs', 'sessions', 'enrollments', 'modules', 'cohorts'] as const) {
       await payload.delete({ collection, where: {}, overrideAccess: true })
     }
     await Promise.all(
@@ -82,7 +82,7 @@ describe('Session reminders (§6.3)', () => {
       })
     }
     const session = await payload.create({
-      collection: 'training-sessions',
+      collection: 'sessions',
       data: {
         module: trainingModule.id,
         trainer: seeded.trainer.id,
@@ -142,7 +142,7 @@ describe('Session reminders (§6.3)', () => {
     expect(recipients).toEqual([seeded.internA.email, seeded.internB.email].sort())
     expect((sendEmailSpy.mock.calls[0][0] as { subject: string }).subject).toMatch(/^Reminder:/)
 
-    const updated = await payload.findByID({ collection: 'training-sessions', id: session.id, overrideAccess: true })
+    const updated = await payload.findByID({ collection: 'sessions', id: session.id, overrideAccess: true })
     expect(updated.reminderStatus).toBe('sent')
   })
 
@@ -152,7 +152,7 @@ describe('Session reminders (§6.3)', () => {
 
     const newDate = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000)
     await payload.update({
-      collection: 'training-sessions',
+      collection: 'sessions',
       id: session.id,
       data: { scheduledDate: newDate.toISOString() },
       overrideAccess: true,
@@ -176,13 +176,13 @@ describe('Session reminders (§6.3)', () => {
 
     const newDate = new Date(Date.now() + 4 * 24 * 60 * 60 * 1000)
     await payload.update({
-      collection: 'training-sessions',
+      collection: 'sessions',
       id: session.id,
       data: { scheduledDate: newDate.toISOString() },
       overrideAccess: true,
     })
 
-    const updated = await payload.findByID({ collection: 'training-sessions', id: session.id, overrideAccess: true })
+    const updated = await payload.findByID({ collection: 'sessions', id: session.id, overrideAccess: true })
     expect(updated.reminderStatus).toBe('pending')
 
     // The "rescheduled" notice is queued for immediate pickup (no
@@ -208,7 +208,7 @@ describe('Session reminders (§6.3)', () => {
     const job = await latestReminderJob(session.id)
 
     await payload.update({
-      collection: 'training-sessions',
+      collection: 'sessions',
       id: session.id,
       data: { status: 'cancelled' },
       overrideAccess: true,

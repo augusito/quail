@@ -1,14 +1,16 @@
 import type { CollectionSlug } from 'payload'
 
 import type {
-  AlumniProfile,
+  Alumna,
   Contract,
   Document,
   Enrollment,
   Evaluation,
-  LogbookEntry,
+  Intern,
+  Logbook,
   Score,
-  TrainingSession,
+  Session,
+  Trainer,
   User,
 } from '../payload-types'
 import type { ExportColumn } from './buildWorkbook'
@@ -22,11 +24,17 @@ import { displayName, formatBoolean, formatDate, joinValues } from './format'
 // relationship IDs or JSON blobs, and stays stable when an unrelated field
 // gets added to a collection.
 //
+// This hand-written-column approach is also what satisfies §7's new "not
+// exposed in bulk exports" requirement for sensitive fields
+// (dateOfBirth, nationalIdNumber, kraPin, shifNumber, nssfNumber, all on
+// Trainer/Intern, §5): the `trainers`/`interns` definitions below simply
+// never list those columns, rather than needing a separate redaction step.
+//
 // A narrower, curated set of collections is exposed here rather than every
 // collection in the app — group/array-heavy or upload-only collections
-// (LogbookEntries' driver/non-driver nested groups aside, which do get a
+// (Logbook's driver/non-driver nested groups aside, which do get a
 // flattened column set below) and internal ones (Files, Invites,
-// payload-jobs) aren't meaningful as a flat spreadsheet row.
+// Education, payload-jobs) aren't meaningful as a flat spreadsheet row.
 export type ExportDefinition<T> = {
   columns: ExportColumn<T>[]
   label: string
@@ -49,6 +57,34 @@ export const exportRegistry: Partial<Record<CollectionSlug, ExportDefinition<unk
     { header: 'Created At', get: (d) => formatDate(d.createdAt) },
   ]),
 
+  trainers: defineExport<Trainer>('Trainers', [
+    { header: 'ID', get: (d) => d.id },
+    { header: 'Name', get: (d) => d.name },
+    { header: 'Occupation', get: (d) => d.occupation },
+    { header: 'Address', get: (d) => d.address ?? '' },
+    { header: 'Phone', get: (d) => d.phone },
+    { header: 'Email', get: (d) => d.email },
+    // §7: nationalIdNumber and kraPin deliberately omitted — sensitive
+    // personal data, not exposed in bulk exports.
+  ]),
+
+  interns: defineExport<Intern>('Interns', [
+    { header: 'ID', get: (d) => d.id },
+    { header: 'Name', get: (d) => d.name },
+    { header: 'Gender', get: (d) => d.gender },
+    { header: 'Nationality', get: (d) => d.nationality },
+    { header: 'Address', get: (d) => d.address ?? '' },
+    { header: 'Phone', get: (d) => d.phone },
+    { header: 'Email', get: (d) => d.email },
+    { header: 'Next of Kin Name', get: (d) => d.nextOfKin?.name ?? '' },
+    { header: 'Next of Kin Phone', get: (d) => d.nextOfKin?.phone ?? '' },
+    // §7: dateOfBirth, nationalIdNumber, kraPin, shifNumber, nssfNumber
+    // deliberately omitted — sensitive personal data, not exposed in bulk
+    // exports. Next-of-kin contact details aren't the intern's own
+    // sensitive data (§7 only names the intern/trainer's own statutory
+    // numbers and DOB) so are included as they're useful roster info.
+  ]),
+
   enrollments: defineExport<Enrollment>('Enrollments', [
     { header: 'ID', get: (d) => d.id },
     { header: 'Intern', get: (d) => displayName(d.intern) },
@@ -69,7 +105,7 @@ export const exportRegistry: Partial<Record<CollectionSlug, ExportDefinition<unk
     { header: 'Media Consent', get: (d) => formatBoolean(d.mediaConsent) },
   ]),
 
-  'training-sessions': defineExport<TrainingSession>('Training Sessions', [
+  sessions: defineExport<Session>('Sessions', [
     { header: 'ID', get: (d) => d.id },
     { header: 'Module', get: (d) => displayName(d.module) },
     { header: 'Trainer', get: (d) => displayName(d.trainer) },
@@ -97,17 +133,15 @@ export const exportRegistry: Partial<Record<CollectionSlug, ExportDefinition<unk
     { header: 'Outcome', get: (d) => d.outcome ?? '' },
   ]),
 
-  'logbook-entries': defineExport<LogbookEntry>('Logbook Entries', [
+  logbooks: defineExport<Logbook>('Logbooks', [
     { header: 'ID', get: (d) => d.id },
     { header: 'Intern', get: (d) => displayName(d.intern) },
     { header: 'Cohort', get: (d) => displayName(d.cohort) },
     { header: 'Type', get: (d) => d.type },
-    { header: 'Author', get: (d) => d.author },
     { header: 'Date', get: (d) => formatDate(d.date) },
     { header: 'Status', get: (d) => d.status ?? '' },
     { header: 'KMs Driven', get: (d) => d.trip?.kmsDriven ?? '' },
     { header: 'Trip Area', get: (d) => d.trip?.area ?? '' },
-    { header: 'Distance Driven (Supervisor)', get: (d) => d.supervisorRollup?.distanceDriven ?? '' },
     { header: 'Week Project', get: (d) => d.week?.projectAssigned ?? '' },
     { header: 'Supervisor Comment', get: (d) => d.supervisorComment ?? '' },
   ]),
@@ -121,7 +155,7 @@ export const exportRegistry: Partial<Record<CollectionSlug, ExportDefinition<unk
     { header: 'File', get: (d) => displayName(d.file) },
   ]),
 
-  'alumni-profiles': defineExport<AlumniProfile>('Alumni Profiles', [
+  alumnae: defineExport<Alumna>('Alumnae', [
     { header: 'ID', get: (d) => d.id },
     { header: 'Intern', get: (d) => displayName(d.intern) },
     { header: 'Employment Status', get: (d) => d.employmentStatus ?? '' },

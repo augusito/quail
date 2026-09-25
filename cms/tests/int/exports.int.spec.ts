@@ -150,4 +150,70 @@ describe('GET /api/export/:collection (§6.11 Excel exports)', () => {
     })
     expect(dataRowCount).toBe(1)
   })
+
+  // §7 (proposal v2): "national ID/passport numbers, KRA PINs, SHIF/NSSF
+  // numbers, and date of birth... not exposed in bulk exports". The
+  // trainers/interns export definitions (src/exports/registry.ts) simply
+  // don't list those columns — confirm that holds for a real .xlsx, not
+  // just by re-reading the column list.
+  it('never includes sensitive Trainer/Intern fields (national ID, KRA PIN, SHIF, NSSF, date of birth) in exports', async () => {
+    const trainer = await payload.create({
+      collection: 'users',
+      data: { email: 'export-trainer@test.dev', password: 'test1234', role: 'trainer' as const, status: 'active' as const },
+      overrideAccess: true,
+    })
+    await payload.create({
+      collection: 'trainers',
+      data: {
+        user: trainer.id,
+        name: 'Export Trainer',
+        occupation: 'Instructor',
+        phone: '0700000000',
+        email: trainer.email,
+        nationalIdNumber: 'SECRET-ID-TRAINER',
+        kraPin: 'SECRET-KRA-TRAINER',
+      },
+      overrideAccess: true,
+    })
+    await payload.create({
+      collection: 'interns',
+      data: {
+        user: seeded.intern.id,
+        name: 'Export Intern',
+        dateOfBirth: '2000-05-05',
+        gender: 'female' as const,
+        nationality: 'Kenyan',
+        phone: '0711111111',
+        email: seeded.intern.email,
+        nationalIdNumber: 'SECRET-ID-INTERN',
+        kraPin: 'SECRET-KRA-INTERN',
+        shifNumber: 'SECRET-SHIF-INTERN',
+        nssfNumber: 'SECRET-NSSF-INTERN',
+        nextOfKin: { name: 'Kin', relationship: 'Mother', phone: '0722222222' },
+      },
+      overrideAccess: true,
+    })
+
+    for (const collection of ['trainers', 'interns']) {
+      const response = await callExport(collection, { user: seeded.admin })
+      expect(response.status).toBe(200)
+      const buffer = Buffer.from(await response.arrayBuffer())
+      const raw = buffer.toString('latin1')
+      for (const secret of [
+        'SECRET-ID-TRAINER',
+        'SECRET-KRA-TRAINER',
+        'SECRET-ID-INTERN',
+        'SECRET-KRA-INTERN',
+        'SECRET-SHIF-INTERN',
+        'SECRET-NSSF-INTERN',
+        '2000-05-05',
+      ]) {
+        expect(raw).not.toContain(secret)
+      }
+    }
+
+    await payload.delete({ collection: 'trainers', where: {}, overrideAccess: true })
+    await payload.delete({ collection: 'interns', where: {}, overrideAccess: true })
+    await payload.delete({ collection: 'users', id: trainer.id, overrideAccess: true })
+  })
 })

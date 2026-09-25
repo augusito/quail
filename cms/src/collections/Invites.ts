@@ -6,20 +6,24 @@ import { isAdmin } from '../access/roles'
 
 const INVITE_TTL_HOURS = 24
 
-// §6.2: "Interns self-register via a cohort-specific invite link sent via
-// email. Admin generates the link per cohort when it opens; anyone with it
-// can create an account and is auto-enrolled in that cohort's track."
-// Since a cohort can run multiple tracks in parallel (§6.1), an invite is
-// scoped to one specific track within a cohort — admin creates one per
-// open track. "Expire 24 hours after issue, or can be revoked at admin's
-// discretion" is enforced by the /api/register endpoint
-// (src/endpoints/register.ts), which is the only consumer of this
-// collection's token; the collection itself stays admin-only.
+// §6.2 (proposal v2): "Both interns and trainers self-register, via an
+// invite link personalized to their email — admin enters the person's
+// email address (plus their role and cohort) to generate and send it,
+// rather than one shareable link per cohort. Only that email address can
+// complete registration with it." /api/register (src/endpoints/register.ts)
+// enforces the "only that email" half by using this record's own `email`
+// as the account's email outright, rather than accepting a separately
+// submitted one to compare against — there's no mismatch to check if the
+// client never gets to supply it.
+//
+// `track` only makes sense for an intern invite (which track they're
+// auto-enrolled into) — a trainer invite just associates the trainer with
+// the cohort ahead of their contract (§6.4), no track involved.
 export const Invites: CollectionConfig = {
   slug: 'invites',
   admin: {
-    useAsTitle: 'token',
-    defaultColumns: ['cohort', 'track', 'expiresAt', 'revoked'],
+    useAsTitle: 'email',
+    defaultColumns: ['email', 'role', 'cohort', 'track', 'status', 'expiresAt'],
   },
   access: {
     create: isAdmin,
@@ -35,9 +39,33 @@ export const Invites: CollectionConfig = {
       required: true,
     },
     {
-      name: 'track',
+      name: 'role',
       type: 'select',
       required: true,
+      options: [
+        { label: 'Intern', value: 'intern' },
+        { label: 'Trainer', value: 'trainer' },
+      ],
+    },
+    {
+      name: 'email',
+      type: 'email',
+      required: true,
+      admin: {
+        description: 'Only this address can complete registration with the resulting link (§6.2).',
+      },
+    },
+    {
+      name: 'track',
+      type: 'select',
+      admin: {
+        condition: (_, siblingData) => siblingData?.role === 'intern',
+        description: 'Which track this intern is auto-enrolled into. Not used for trainer invites.',
+      },
+      validate: (value: string | string[] | null | undefined, { siblingData }: { siblingData?: { role?: string } }) => {
+        if (siblingData?.role === 'intern' && !value) return 'Track is required for intern invites.'
+        return true
+      },
       options: [
         { label: 'Truck Driving', value: 'truck-driving' },
         { label: 'Automotive Mechanics', value: 'mechanics' },
@@ -65,12 +93,20 @@ export const Invites: CollectionConfig = {
       },
     },
     {
-      name: 'revoked',
-      type: 'checkbox',
-      defaultValue: false,
+      name: 'status',
+      type: 'select',
+      required: true,
+      defaultValue: 'sent',
       admin: {
-        description: "Admin's discretion, e.g. if the link leaked (§6.2). A revoked invite is rejected the same as an expired one.",
+        description:
+          "Set automatically: 'used' once registration completes, 'expired' the first time a stale invite is checked past expiresAt. 'Revoked' is admin's discretion (e.g. entered the wrong email, or the person is no longer eligible) — rejected the same as an expired one.",
       },
+      options: [
+        { label: 'Sent', value: 'sent' },
+        { label: 'Used', value: 'used' },
+        { label: 'Expired', value: 'expired' },
+        { label: 'Revoked', value: 'revoked' },
+      ],
     },
     {
       name: 'createdBy',
@@ -107,7 +143,7 @@ export const Invites: CollectionConfig = {
         // Email integration not yet implemented (§6.2 asks for this to be
         // sent via email) — log the link so it's usable in the meantime.
         req.payload.logger.info(
-          `[invite] cohort=${cohortId} track=${doc.track} expiresAt=${doc.expiresAt} link=${baseUrl}/register?token=${doc.token}`,
+          `[invite] cohort=${cohortId} role=${doc.role} email=${doc.email} track=${doc.track ?? '—'} expiresAt=${doc.expiresAt} link=${baseUrl}/register?token=${doc.token}`,
         )
       },
     ],

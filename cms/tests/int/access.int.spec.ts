@@ -38,8 +38,8 @@ describe('Access control (§4 permissions matrix)', () => {
     // before the users/cohorts/modules themselves.
     for (const collection of [
       'scores',
-      'logbook-entries',
-      'training-sessions',
+      'logbooks',
+      'sessions',
       'enrollments',
       'modules',
       'cohorts',
@@ -105,7 +105,7 @@ describe('Access control (§4 permissions matrix)', () => {
     const moduleA = await payload.create({ collection: 'modules', data: { track: 'ict', name: 'Module A' }, overrideAccess: true })
     const moduleB = await payload.create({ collection: 'modules', data: { track: 'ict', name: 'Module B' }, overrideAccess: true })
     await payload.create({
-      collection: 'training-sessions',
+      collection: 'sessions',
       data: { module: moduleA.id, trainer: seeded.trainerA.id, cohort: cohort.id, scheduledDate: '2026-02-01', status: 'scheduled' as const },
       overrideAccess: true,
     })
@@ -138,7 +138,7 @@ describe('Access control (§4 permissions matrix)', () => {
     })
     const trainingModule = await payload.create({ collection: 'modules', data: { track: 'ict', name: 'Module C' }, overrideAccess: true })
     await payload.create({
-      collection: 'training-sessions',
+      collection: 'sessions',
       data: { module: trainingModule.id, trainer: seeded.trainerA.id, cohort: cohort.id, scheduledDate: '2026-02-01', status: 'scheduled' as const },
       overrideAccess: true,
     })
@@ -193,18 +193,18 @@ describe('Access control (§4 permissions matrix)', () => {
     })
     // internB has no enrollment with supervisorA
     const assignedEntry = await payload.create({
-      collection: 'logbook-entries',
-      data: { intern: seeded.internA.id, type: 'driver', author: 'self', date: '2026-02-01' },
+      collection: 'logbooks',
+      data: { intern: seeded.internA.id, type: 'driver', date: '2026-02-01' },
       overrideAccess: true,
     })
     const unassignedEntry = await payload.create({
-      collection: 'logbook-entries',
-      data: { intern: seeded.internB.id, type: 'driver', author: 'self', date: '2026-02-01' },
+      collection: 'logbooks',
+      data: { intern: seeded.internB.id, type: 'driver', date: '2026-02-01' },
       overrideAccess: true,
     })
 
     const canReadAssigned = await payload.findByID({
-      collection: 'logbook-entries',
+      collection: 'logbooks',
       id: assignedEntry.id,
       overrideAccess: false,
       user: seeded.supervisorA,
@@ -212,7 +212,7 @@ describe('Access control (§4 permissions matrix)', () => {
     expect(canReadAssigned.id).toBe(assignedEntry.id)
 
     const cannotReadUnassigned = await payload.findByID({
-      collection: 'logbook-entries',
+      collection: 'logbooks',
       id: unassignedEntry.id,
       overrideAccess: false,
       user: seeded.supervisorA,

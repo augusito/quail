@@ -6,27 +6,30 @@ import { buildConfig } from 'payload'
 import { fileURLToPath } from 'url'
 import sharp from 'sharp'
 
-import { AlumniProfiles } from './collections/AlumniProfiles'
+import { Alumna } from './collections/Alumna'
 import { Announcements } from './collections/Announcements'
 import { Cohorts } from './collections/Cohorts'
 import { Contracts } from './collections/Contracts'
 import { Documents } from './collections/Documents'
+import { Education } from './collections/Education'
 import { Enrollments } from './collections/Enrollments'
 import { Evaluations } from './collections/Evaluations'
 import { Files } from './collections/Files'
+import { Images } from './collections/Images'
+import { Intern } from './collections/Intern'
 import { Invites } from './collections/Invites'
-import { LogbookEntries } from './collections/LogbookEntries'
+import { Logbook } from './collections/Logbook'
 import { Media } from './collections/Media'
-import { MediaAssets } from './collections/MediaAssets'
-import { ModuleNotes } from './collections/ModuleNotes'
 import { Modules } from './collections/Modules'
+import { Note } from './collections/Note'
 import { Scores } from './collections/Scores'
-import { TrainingSessions } from './collections/TrainingSessions'
+import { Session } from './collections/Session'
+import { Trainer } from './collections/Trainer'
 import { Users } from './collections/Users'
 import { Workplans } from './collections/Workplans'
 import { emailAdapter } from './email/adapter'
 import { exportCollectionEndpoint } from './endpoints/exportCollection'
-import { registerEndpoint } from './endpoints/register'
+import { registerEndpoints } from './endpoints/register'
 import { sendSessionReminderTask } from './jobs/sendSessionReminder'
 
 const filename = fileURLToPath(import.meta.url)
@@ -59,27 +62,30 @@ export default buildConfig({
   },
   collections: [
     Users,
-    Media,
+    Trainer,
+    Intern,
+    Education,
+    Images,
     Files,
     Cohorts,
     Enrollments,
     Invites,
     Contracts,
     Modules,
-    TrainingSessions,
-    ModuleNotes,
+    Session,
+    Note,
     Scores,
-    LogbookEntries,
+    Logbook,
     Evaluations,
     Workplans,
     Documents,
-    MediaAssets,
-    AlumniProfiles,
+    Media,
+    Alumna,
     Announcements,
   ],
   editor: lexicalEditor(),
   email: emailAdapter,
-  endpoints: [registerEndpoint, exportCollectionEndpoint],
+  endpoints: [...registerEndpoints, exportCollectionEndpoint],
   // §6.3 reminders run on Payload's built-in job queue (§10). autoRun
   // processes due jobs every minute on this persistent server (§7 confirms
   // hosting is a persistent process, not serverless — a requirement of

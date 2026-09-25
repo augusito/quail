@@ -6,14 +6,14 @@ import config from '@/payload.config'
 // §6.9 public Talent Board — view-only. Fetched with overrideAccess:
 // false and user: null so this page renders exactly what an anonymous
 // visitor's own API request would see: opted-in AND graduated profiles
-// only (readAccess in src/collections/AlumniProfiles.ts), same as
+// only (readAccess in src/collections/Alumna.ts), same as
 // everyone else — nothing here bypasses that.
 export default async function TalentBoardPage() {
   const payloadConfig = await config
   const payload = await getPayload({ config: payloadConfig })
 
   const { docs: profiles } = await payload.find({
-    collection: 'alumni-profiles',
+    collection: 'alumnae',
     depth: 1,
     limit: 100,
     overrideAccess: false,

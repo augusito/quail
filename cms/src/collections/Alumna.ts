@@ -26,8 +26,15 @@ const readAccess: Access = async ({ req: { user, payload } }): Promise<AccessRes
 //
 // §4: "View talent board" — Admin (all), Public (✅, view-only). "Edit own
 // talent board listing" — Admin, Intern (own, post-graduation opt-in).
-export const AlumniProfiles: CollectionConfig = {
-  slug: 'alumni-profiles',
+//
+// Renamed from `AlumniProfile` to `Alumna` per proposal v2's §5 naming
+// notes. `intern` still relates to `users` (not the new `Intern` profile
+// collection) — this is about which login account the listing belongs to,
+// not the intern's statutory/registration profile data, and keeping it on
+// `users` avoids ever nesting the sensitive Intern fields (§7) into a
+// publicly-readable relationship.
+export const Alumna: CollectionConfig = {
+  slug: 'alumnae',
   admin: {
     useAsTitle: 'name',
     defaultColumns: ['name', 'intern', 'optedIn'],
@@ -57,7 +64,7 @@ export const AlumniProfiles: CollectionConfig = {
     {
       name: 'photo',
       type: 'relationship',
-      relationTo: 'media',
+      relationTo: 'images',
     },
     {
       name: 'employmentStatus',

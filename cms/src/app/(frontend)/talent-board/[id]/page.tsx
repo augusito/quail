@@ -15,7 +15,7 @@ export default async function TalentBoardProfilePage({ params }: { params: Promi
 
   const profile = await payload
     .findByID({
-      collection: 'alumni-profiles',
+      collection: 'alumnae',
       id,
       depth: 1,
       overrideAccess: false,

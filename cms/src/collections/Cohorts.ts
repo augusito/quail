@@ -74,7 +74,7 @@ export const Cohorts: CollectionConfig = {
       filterOptions: { role: { equals: 'trainer' } },
       admin: {
         description:
-          '§4 "Media library access… unless granted per cohort" — trainers listed here can view this cohort\'s cohort-extended media-assets (MediaAssets.ts). Admin-only assets stay admin-only regardless.',
+          '§4 "Media library access… unless granted per cohort" — trainers listed here can view this cohort\'s cohort-extended media (Media.ts). Admin-only assets stay admin-only regardless.',
       },
     },
   ],

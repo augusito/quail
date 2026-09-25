@@ -7,8 +7,10 @@ import { adminOrRoleOwnsField, isAdmin } from '../access/roles'
 // §4 "Post module notes/scores": Admin (view all), Trainer (own modules
 // only — scoped here via the `trainer` field on the note itself). Not
 // granted to interns/supervisors in the matrix.
-export const ModuleNotes: CollectionConfig = {
-  slug: 'module-notes',
+//
+// Renamed from `ModuleNote` to `Note` per proposal v2's §5 naming notes.
+export const Note: CollectionConfig = {
+  slug: 'notes',
   admin: {
     useAsTitle: 'id',
     defaultColumns: ['session', 'trainer'],
@@ -23,7 +25,7 @@ export const ModuleNotes: CollectionConfig = {
     {
       name: 'session',
       type: 'relationship',
-      relationTo: 'training-sessions',
+      relationTo: 'sessions',
       required: true,
     },
     {

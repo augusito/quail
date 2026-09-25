@@ -17,8 +17,8 @@ import { exportRegistry } from '../exports/registry'
 const COHORT_FILTERABLE: CollectionSlug[] = [
   'enrollments',
   'contracts',
-  'training-sessions',
-  'logbook-entries',
+  'sessions',
+  'logbooks',
   'evaluations',
 ]
 
