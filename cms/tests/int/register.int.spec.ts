@@ -139,6 +139,36 @@ describe('/api/register (§6.2 invite-link self-registration, proposal v2)', () 
     expect(invite.status).toBe('sent')
   })
 
+  it('still rejects a track value that is not one of the real track options', async () => {
+    // Invites.track has a custom `validate` (required-for-intern check) —
+    // a custom validate fully replaces Payload's own default per-field
+    // validator, so the built-in option-membership check has to be
+    // explicitly re-applied inside it, or this would wrongly succeed.
+    // Field validation runs regardless of overrideAccess (only access
+    // control is bypassed by it), so no seeded admin user is needed here.
+    const cohort = await payload.create({
+      collection: 'cohorts',
+      data: { name: `Bad Track Test ${Date.now()}`, tracks: ['ict' as const], startDate: '2026-01-01', endDate: '2026-06-01', status: 'open' as const },
+      overrideAccess: true,
+    })
+    const badInviteData: {
+      cohort: number
+      email: string
+      role: 'intern'
+      status: 'sent'
+      track: 'business-management' | 'ict' | 'mechanics' | 'supply-chain' | 'truck-driving'
+    } = {
+      cohort: cohort.id,
+      role: 'intern',
+      email: `bad-track-${Date.now()}@test.dev`,
+      status: 'sent',
+      track: 'not-a-real-track' as 'ict',
+    }
+    await expect(
+      payload.create({ collection: 'invites', data: badInviteData, overrideAccess: true }),
+    ).rejects.toThrow()
+  })
+
   describe('GET /api/register?token= (invite lookup)', () => {
     it('returns role/email/cohort/track for a valid invite', async () => {
       const { cohort, invite } = await createInvite('intern')
@@ -234,6 +264,39 @@ describe('/api/register (§6.2 invite-link self-registration, proposal v2)', () 
       expect(response.status).toBe(400)
       const body = await response.json()
       expect(body.error).toMatch(/nextOfKin/)
+    })
+
+    it('rolls back the created user (and leaves the invite usable) if profile creation fails partway', async () => {
+      const { invite } = await createInvite('intern')
+
+      // `gender` is a non-empty string, so it passes the endpoint's own
+      // presence check, but isn't one of Intern.gender's select options —
+      // this only fails once the `interns` collection's own field
+      // validation runs, i.e. *after* the User row has already been
+      // created.
+      const response = await callRegister({ token: invite.token, ...internBody({ gender: 'not-a-real-option' }) })
+      expect(response.status).toBe(400)
+
+      const { docs: orphanedUsers } = await payload.find({
+        collection: 'users',
+        where: { email: { equals: invite.email } },
+        overrideAccess: true,
+      })
+      expect(orphanedUsers).toHaveLength(0)
+
+      const { docs: orphanedProfiles } = await payload.find({
+        collection: 'interns',
+        where: { email: { equals: invite.email } },
+        overrideAccess: true,
+      })
+      expect(orphanedProfiles).toHaveLength(0)
+
+      const untouchedInvite = await payload.findByID({ collection: 'invites', id: invite.id, overrideAccess: true })
+      expect(untouchedInvite.status).toBe('sent')
+
+      // The same invite/email can still complete registration afterward.
+      const retry = await callRegister({ token: invite.token, ...internBody() })
+      expect(retry.status).toBe(201)
     })
   })
 

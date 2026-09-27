@@ -61,11 +61,17 @@ export const adminOrRoleOwnsField =
     return { [field]: { equals: user!.id } }
   }
 
-/** The `create`-safe counterpart to `adminOrRoleOwnsField` — see its comment for why the two aren't interchangeable. */
+/**
+ * The `create`-safe counterpart to `adminOrRoleOwnsField` — see its
+ * comment for why the two aren't interchangeable. Compares ids as strings
+ * (rather than `===`) since this runs before Payload's own field-type
+ * coercion — a raw REST/GraphQL caller sending the id as `"42"` instead
+ * of `42` shouldn't be wrongly denied creating their own row over that.
+ */
 export const adminOrRoleOwnsFieldOnCreate =
   (role: Role, field: string): Access =>
   ({ req: { user }, data }) => {
     if (hasRole(user, 'admin')) return true
     if (!hasRole(user, role)) return false
-    return data?.[field] === user!.id
+    return data?.[field] !== undefined && data[field] !== null && String(data[field]) === String(user!.id)
   }

@@ -184,89 +184,117 @@ const submitEndpoint: Endpoint = {
 
     const cohortId = typeof invite.cohort === 'object' ? invite.cohort.id : invite.cohort
 
-    if (invite.role === 'intern') {
-      const intern = await req.payload.create({
-        collection: 'interns',
-        data: {
-          user: user.id,
-          name: body.name as string,
-          dateOfBirth: body.dateOfBirth as string,
-          gender: body.gender as 'female' | 'male' | 'other',
-          nationality: body.nationality as string,
-          address: typeof body.address === 'string' ? body.address : undefined,
-          phone: body.phone as string,
-          email: invite.email,
-          nationalIdNumber: body.nationalIdNumber as string,
-          kraPin: body.kraPin as string,
-          shifNumber: body.shifNumber as string,
-          nssfNumber: body.nssfNumber as string,
-          nextOfKin: {
-            name: nextOfKin.name as string,
-            relationship: nextOfKin.relationship as string,
-            address: typeof nextOfKin.address === 'string' ? nextOfKin.address : undefined,
-            phone: nextOfKin.phone as string,
-            email: typeof nextOfKin.email === 'string' ? nextOfKin.email : undefined,
-          },
-        },
-        overrideAccess: true,
-      })
-
-      const education = Array.isArray(body.education) ? (body.education as Record<string, unknown>[]) : []
-      for (const entry of education) {
-        if (typeof entry.school !== 'string' || typeof entry.qualification !== 'string') continue
-        await req.payload.create({
-          collection: 'education',
+    // From here on, `user` already exists — if any later step throws (e.g.
+    // a bad `gender`/`track` value that isn't caught by the presence-only
+    // `missingFields` check above, but is by these collections' own field
+    // validation), we must not leave an orphaned user sitting on an
+    // otherwise-still-`sent` invite: retrying would immediately fail with
+    // a duplicate-email error, permanently locking that person out. There's
+    // no shared DB transaction across these `create` calls (consistent with
+    // the rest of this codebase), so on failure we best-effort delete
+    // whatever we did manage to create, in reverse order, and leave the
+    // invite untouched (still `sent`) so the same link can be retried.
+    const created: { collection: 'contracts' | 'education' | 'interns' | 'trainers' | 'enrollments'; id: number }[] = []
+    try {
+      if (invite.role === 'intern') {
+        const intern = await req.payload.create({
+          collection: 'interns',
           data: {
-            intern: intern.id,
-            school: entry.school,
-            qualification: entry.qualification,
-            startDate: typeof entry.startDate === 'string' ? entry.startDate : undefined,
-            endDate: typeof entry.endDate === 'string' ? entry.endDate : undefined,
+            user: user.id,
+            name: body.name as string,
+            dateOfBirth: body.dateOfBirth as string,
+            gender: body.gender as 'female' | 'male' | 'other',
+            nationality: body.nationality as string,
+            address: typeof body.address === 'string' ? body.address : undefined,
+            phone: body.phone as string,
+            email: invite.email,
+            nationalIdNumber: body.nationalIdNumber as string,
+            kraPin: body.kraPin as string,
+            shifNumber: body.shifNumber as string,
+            nssfNumber: body.nssfNumber as string,
+            nextOfKin: {
+              name: nextOfKin.name as string,
+              relationship: nextOfKin.relationship as string,
+              address: typeof nextOfKin.address === 'string' ? nextOfKin.address : undefined,
+              phone: nextOfKin.phone as string,
+              email: typeof nextOfKin.email === 'string' ? nextOfKin.email : undefined,
+            },
           },
           overrideAccess: true,
         })
+        created.push({ collection: 'interns', id: intern.id })
+
+        const education = Array.isArray(body.education) ? (body.education as Record<string, unknown>[]) : []
+        for (const entry of education) {
+          if (typeof entry.school !== 'string' || typeof entry.qualification !== 'string') continue
+          const row = await req.payload.create({
+            collection: 'education',
+            data: {
+              intern: intern.id,
+              school: entry.school,
+              qualification: entry.qualification,
+              startDate: typeof entry.startDate === 'string' ? entry.startDate : undefined,
+              endDate: typeof entry.endDate === 'string' ? entry.endDate : undefined,
+            },
+            overrideAccess: true,
+          })
+          created.push({ collection: 'education', id: row.id })
+        }
+
+        const enrollment = await req.payload.create({
+          collection: 'enrollments',
+          data: {
+            intern: user.id,
+            cohort: cohortId,
+            track: invite.track as
+              | 'business-management'
+              | 'ict'
+              | 'mechanics'
+              | 'supply-chain'
+              | 'truck-driving',
+            outcome: 'in-progress',
+          },
+          overrideAccess: true,
+        })
+        created.push({ collection: 'enrollments', id: enrollment.id })
+      } else {
+        const trainer = await req.payload.create({
+          collection: 'trainers',
+          data: {
+            user: user.id,
+            name: body.name as string,
+            occupation: body.occupation as string,
+            address: typeof body.address === 'string' ? body.address : undefined,
+            phone: body.phone as string,
+            email: invite.email,
+            nationalIdNumber: body.nationalIdNumber as string,
+            kraPin: body.kraPin as string,
+          },
+          overrideAccess: true,
+        })
+        created.push({ collection: 'trainers', id: trainer.id })
+
+        // §6.2 "trainers are associated with that cohort ahead of their
+        // contract (§6.4)" — a Draft contract stub is the concrete form
+        // that association takes: it's the natural next step for admin
+        // (upload terms, move to Sent) and Contract already models
+        // trainer+cohort.
+        const contract = await req.payload.create({
+          collection: 'contracts',
+          data: { trainer: user.id, cohort: cohortId, status: 'draft' },
+          overrideAccess: true,
+        })
+        created.push({ collection: 'contracts', id: contract.id })
       }
-
-      await req.payload.create({
-        collection: 'enrollments',
-        data: {
-          intern: user.id,
-          cohort: cohortId,
-          track: invite.track as
-            | 'business-management'
-            | 'ict'
-            | 'mechanics'
-            | 'supply-chain'
-            | 'truck-driving',
-          outcome: 'in-progress',
-        },
-        overrideAccess: true,
-      })
-    } else {
-      await req.payload.create({
-        collection: 'trainers',
-        data: {
-          user: user.id,
-          name: body.name as string,
-          occupation: body.occupation as string,
-          address: typeof body.address === 'string' ? body.address : undefined,
-          phone: body.phone as string,
-          email: invite.email,
-          nationalIdNumber: body.nationalIdNumber as string,
-          kraPin: body.kraPin as string,
-        },
-        overrideAccess: true,
-      })
-
-      // §6.2 "trainers are associated with that cohort ahead of their
-      // contract (§6.4)" — a Draft contract stub is the concrete form that
-      // association takes: it's the natural next step for admin (upload
-      // terms, move to Sent) and Contract already models trainer+cohort.
-      await req.payload.create({
-        collection: 'contracts',
-        data: { trainer: user.id, cohort: cohortId, status: 'draft' },
-        overrideAccess: true,
-      })
+    } catch (err) {
+      await Promise.all(
+        created
+          .reverse()
+          .map((row) => req.payload.delete({ collection: row.collection, id: row.id, overrideAccess: true }).catch(() => {})),
+      )
+      await req.payload.delete({ collection: 'users', id: user.id, overrideAccess: true }).catch(() => {})
+      const message = err instanceof APIError ? err.message : 'Could not complete registration.'
+      return Response.json({ error: message }, { status: 400 })
     }
 
     await req.payload.update({ collection: 'invites', id: invite.id, data: { status: 'used' }, overrideAccess: true })

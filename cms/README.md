@@ -117,6 +117,17 @@ reason to submit someone else's id; flagged as a follow-up rather than
 fixed here, to keep this change to what the proposal revision asked
 for.)
 
+`adminOrRoleOwnsFieldOnCreate` compares ids as strings
+(`String(data[field]) === String(user.id)`) rather than `===` — this
+check runs before Payload's own field-type coercion, so a raw REST/
+GraphQL caller sending the id as `"42"` instead of `42` would otherwise
+be wrongly denied creating their own row. Covered by a unit-level test
+in `tests/int/profiles.int.spec.ts` that calls the access function
+directly (a full `payload.create()` round-trip can't isolate this case:
+the `user` relationship field's own separate validation rejects a
+string id for a numeric-id collection regardless, so testing through the
+full pipeline would fail for the wrong reason).
+
 §7 "sensitive personal data" (`dateOfBirth`, `nationalIdNumber`,
 `kraPin`, `shifNumber`, `nssfNumber`): row-level access above already
 limits reads to admin or the person themself, so there's no other reader
@@ -242,7 +253,14 @@ address, rather than interns-only via a shareable per-cohort/track link.
 Admin creates an `Invites` record: `cohort`, `role` (intern/trainer),
 `email`, and `track` (intern invites only — `admin.condition` hides it
 for trainer invites, and a field `validate` requires it when
-`role: intern`). A `beforeChange` hook auto-generates the `token` and
+`role: intern`). That custom `validate` fully replaces Payload's own
+default per-field validator for `track` (it only auto-installs one when
+`validate` is `undefined`), so it explicitly re-runs the built-in
+option-membership check too (`validations.select` from `payload`) — a
+custom validator that only checked "required for intern" would otherwise
+have silently let a typo'd or bogus track value through admin-time
+validation, surfacing only much later as an obscure failure at
+self-registration. A `beforeChange` hook auto-generates the `token` and
 sets `expiresAt` 24h out (§6.2); an `afterChange` hook logs the resulting
 link — **email integration isn't implemented yet, so this is
 console-only** for now (`[invite] cohort=... role=... email=... track=...
@@ -281,6 +299,17 @@ Two routes at the same path, both public and unauthenticated:
     next step for admin (upload terms, move to Sent), and `Contract`
     already models trainer+cohort.
 
+  If any step after the User is created throws (e.g. a `gender`/`track`
+  value that passes the endpoint's own presence check but not the
+  target collection's own field validation), everything created so far
+  — the profile row, any Education rows, the Enrollment/Contract — is
+  deleted in reverse order and the User itself is deleted too, rather
+  than left as an orphan on an otherwise-still-`sent` invite. There's no
+  shared DB transaction across these `create` calls (consistent with the
+  rest of this codebase), so this is a best-effort compensating cleanup,
+  not a real rollback — but it's what keeps the same invite link usable
+  on retry instead of permanently failing with a duplicate-email error.
+
   `role` and the account **`email` always come from the invite record,
   never the request body** — a registrant cannot self-assign a role,
   register under a different email than the one admin invited, or skip
@@ -289,7 +318,14 @@ Two routes at the same path, both public and unauthenticated:
   `tests/int/register.int.spec.ts` for the exact field lists); missing
   ones return `400` naming which fields. On success the invite's
   `status` flips to `used`, so the same token can never register a
-  second account.
+  second account. The rollback-on-partial-failure behavior above is
+  covered by a dedicated test — a bad `gender` value triggers it, and
+  the test then confirms both that no orphaned User/Intern row remains
+  and that the same invite successfully completes registration on
+  retry — and verified against the real dev server the same way: a bad
+  `gender` returned `400` with no leftover user and the invite still
+  `sent`, and resubmitting with a valid `gender` on the same token then
+  returned `201`.
 
 Admin reviews `status: pending` users and flips them to `active` through
 the existing Users collection (already admin-only, no extra guard needed

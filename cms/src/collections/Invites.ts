@@ -1,10 +1,39 @@
 import crypto from 'node:crypto'
 
-import type { CollectionConfig } from 'payload'
+import type { CollectionConfig, Validate } from 'payload'
+import { validations } from 'payload'
 
 import { isAdmin } from '../access/roles'
 
 const INVITE_TTL_HOURS = 24
+
+const TRACK_OPTIONS = [
+  { label: 'Truck Driving', value: 'truck-driving' },
+  { label: 'Automotive Mechanics', value: 'mechanics' },
+  { label: 'ICT', value: 'ict' },
+  { label: 'Supply Chain', value: 'supply-chain' },
+  { label: 'Business Management', value: 'business-management' },
+]
+
+// A custom `validate` replaces Payload's default per-field validator
+// entirely (it only auto-installs one when `validate` is undefined — see
+// node_modules/payload/dist/fields/config/sanitize.js), so the built-in
+// option-membership check has to be called explicitly here too, or a
+// bogus value (typo, wrong case, stray whitespace) would silently pass
+// admin-time validation and only surface much later, at self-registration,
+// as an obscure failure in Enrollments.track.
+const validateTrack: Validate<string | string[] | undefined, unknown, { role?: string }> = (value, options) => {
+  if (options.siblingData?.role === 'intern' && !value) return 'Track is required for intern invites.'
+  // `validations.select` only reads data/filterOptions/hasMany/options/req/
+  // required/siblingData at runtime (node_modules/payload/dist/fields/
+  // validations.js) — its `ValidateOptions` type demands the full SelectField
+  // shape (e.g. `type: 'select'`) structurally, which this deliberately
+  // partial call-through doesn't have; the cast reflects that gap, not a
+  // real type mismatch.
+  return validations.select(value, { ...options, hasMany: false, options: TRACK_OPTIONS, required: false } as Parameters<
+    typeof validations.select
+  >[1])
+}
 
 // §6.2 (proposal v2): "Both interns and trainers self-register, via an
 // invite link personalized to their email — admin enters the person's
@@ -62,17 +91,8 @@ export const Invites: CollectionConfig = {
         condition: (_, siblingData) => siblingData?.role === 'intern',
         description: 'Which track this intern is auto-enrolled into. Not used for trainer invites.',
       },
-      validate: (value: string | string[] | null | undefined, { siblingData }: { siblingData?: { role?: string } }) => {
-        if (siblingData?.role === 'intern' && !value) return 'Track is required for intern invites.'
-        return true
-      },
-      options: [
-        { label: 'Truck Driving', value: 'truck-driving' },
-        { label: 'Automotive Mechanics', value: 'mechanics' },
-        { label: 'ICT', value: 'ict' },
-        { label: 'Supply Chain', value: 'supply-chain' },
-        { label: 'Business Management', value: 'business-management' },
-      ],
+      validate: validateTrack,
+      options: TRACK_OPTIONS,
     },
     {
       name: 'token',

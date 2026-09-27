@@ -8,6 +8,7 @@
 import { getPayload, Payload } from 'payload'
 import config from '@/payload.config'
 import type { Intern, Trainer, User } from '@/payload-types'
+import { adminOrRoleOwnsFieldOnCreate } from '@/access/roles'
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
@@ -186,6 +187,7 @@ describe('Trainer / Intern / Education access control (§4, §5, §6.2)', () => 
       })
       expect(updated.occupation).toBe('Updated By Admin')
     })
+
   })
 
   describe('Intern', () => {
@@ -267,6 +269,37 @@ describe('Trainer / Intern / Education access control (§4, §5, §6.2)', () => 
         disableErrors: true,
       })
       expect(cannotReadOthers).toBeNull()
+    })
+  })
+
+  describe('adminOrRoleOwnsFieldOnCreate (src/access/roles.ts)', () => {
+    // Unit-level rather than through payload.create: a `relationship`
+    // field's own validation separately rejects a string id for a
+    // numeric-id collection, which would confound a full create() call —
+    // this isolates just the access function's own id comparison.
+    it('allows a matching id even when the submitted data has it as a string (raw REST client) rather than a number', async () => {
+      const access = adminOrRoleOwnsFieldOnCreate('trainer', 'user')
+      const trainerUser = { id: 42, role: 'trainer' } as User
+
+      expect(
+        await access({ req: { user: trainerUser } as never, data: { user: 42 } } as never),
+      ).toBe(true)
+      expect(
+        await access({ req: { user: trainerUser } as never, data: { user: '42' } } as never),
+      ).toBe(true)
+    })
+
+    it('still denies a mismatched id or wrong role', async () => {
+      const access = adminOrRoleOwnsFieldOnCreate('trainer', 'user')
+      const trainerUser = { id: 42, role: 'trainer' } as User
+      const internUser = { id: 42, role: 'intern' } as User
+
+      expect(
+        await access({ req: { user: trainerUser } as never, data: { user: 43 } } as never),
+      ).toBe(false)
+      expect(
+        await access({ req: { user: internUser } as never, data: { user: 42 } } as never),
+      ).toBe(false)
     })
   })
 })
