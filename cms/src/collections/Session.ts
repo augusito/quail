@@ -1,6 +1,6 @@
 import type { CollectionConfig } from 'payload'
 
-import { adminOrRoleOwnsField, isAdmin, isAuthenticated } from '../access/roles'
+import { adminOnlyField, adminOrRoleOwnsField, isAdmin, isAuthenticated } from '../access/roles'
 import { resetReminderStatusOnReschedule, scheduleSessionReminder } from '../hooks/sessionReminders'
 
 // §6.3: reminder sent 2 hours before the scheduled session; a reschedule
@@ -72,6 +72,15 @@ export const Session: CollectionConfig = {
       name: 'reminderStatus',
       type: 'select',
       defaultValue: 'pending',
+      // Job-managed state (src/hooks/sessionReminders.ts,
+      // src/jobs/sendSessionReminder.ts both write it via
+      // overrideAccess/hooks, which aren't subject to field access) — not
+      // something a trainer should be able to set by hand on their own
+      // session and use to suppress the real reminder job.
+      access: {
+        create: adminOnlyField,
+        update: adminOnlyField,
+      },
       options: [
         { label: 'Pending', value: 'pending' },
         { label: 'Sent', value: 'sent' },

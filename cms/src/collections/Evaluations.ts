@@ -1,7 +1,7 @@
 import type { CollectionConfig } from 'payload'
 
 import { hasRole, isAdmin } from '../access/roles'
-import { getSupervisedInternIds } from '../access/scoping'
+import { getSupervisedInternIds, isInternOnTruckDrivingTrack } from '../access/scoping'
 
 // §6.5: normally supervisor-authored. The driving-skills checkpoint
 // (driver track only, baseline + pre-graduation) is a confirmed exception —
@@ -26,9 +26,14 @@ export const Evaluations: CollectionConfig = {
       }
       if (
         hasRole(user, 'trainer') &&
-        (data?.type === 'driving-skills-baseline' || data?.type === 'driving-skills-final')
+        (data?.type === 'driving-skills-baseline' || data?.type === 'driving-skills-final') &&
+        data?.intern !== undefined &&
+        data?.cohort !== undefined
       ) {
-        return true
+        // §6.5: "driver track only" — a trainer may author this checkpoint
+        // only for an intern actually enrolled in the truck-driving track
+        // for the named cohort, not for any intern on any track.
+        return isInternOnTruckDrivingTrack(payload, data.intern, data.cohort)
       }
       return false
     },
