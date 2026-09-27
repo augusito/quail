@@ -34,7 +34,7 @@ const updateAccess: Access = async ({ req: { user, payload } }) => {
 // see that module's score immediately, rather than waiting for cohort end.
 // §4 "View scores" / "Post module notes/scores": Admin (all), Trainer (own
 // modules only — Module has no `trainer` field, so "own modules" is derived
-// from TrainingSession.trainer via getTrainerModuleIds, per §10's
+// from Session.trainer via getTrainerModuleIds, per §10's
 // "trainer may read Scores only where the module's trainer is themself"),
 // Intern (own, and only once finalized).
 export const Scores: CollectionConfig = {

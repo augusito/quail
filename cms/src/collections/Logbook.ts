@@ -3,29 +3,31 @@ import type { CollectionConfig } from 'payload'
 import { hasRole, isAdmin, roleOnlyField } from '../access/roles'
 import { getSupervisedInternIds } from '../access/scoping'
 
-// §6.6: driver and non-driver logbooks have different field structures.
-// The driver track also has a supervisor/"Mentor" rollup log alongside the
-// intern's own per-trip entries — modeled here as author = 'supervisor'
-// records distinguished in the UI as "Supervisor observations", rather than
-// a separate collection (§4, §6.6).
+// §6.6 (proposal v2): "The sample driver logbook's second sheet ('Mentor
+// Driver' — distance driven, area, areas of improvement per intern) is
+// dropped: not needed, so it's out of the model. Each intern keeps a
+// single logbook, self-authored, with the Supervisor reviewing and
+// commenting (§4) — no separate rollup log." This drops the `author` field
+// and the supervisor-authored rollup entries v1 modeled here — a
+// supervisor no longer creates Logbook rows at all, only reviews/comments
+// on the intern's own entries via `supervisorComment`.
 //
 // §4: "Update own logbook" — Intern only (own entries). "Review/comment on
 // logbooks" — Admin (all), Supervisor (assigned interns only, via
 // Enrollment.supervisor). Trainer has no logbook access in the matrix.
-export const LogbookEntries: CollectionConfig = {
-  slug: 'logbook-entries',
+//
+// Renamed from `LogbookEntry` to `Logbook` per proposal v2's §5 naming
+// notes.
+export const Logbook: CollectionConfig = {
+  slug: 'logbooks',
   admin: {
     useAsTitle: 'id',
-    defaultColumns: ['intern', 'type', 'author', 'status'],
+    defaultColumns: ['intern', 'type', 'status'],
   },
   access: {
-    create: async ({ req: { user, payload }, data }) => {
+    create: async ({ req: { user }, data }) => {
       if (hasRole(user, 'admin')) return true
       if (hasRole(user, 'intern')) return data?.intern === user!.id
-      if (hasRole(user, 'supervisor')) {
-        const internIds = await getSupervisedInternIds(payload, user!.id)
-        return internIds.some((id) => id === data?.intern)
-      }
       return false
     },
     read: async ({ req: { user, payload } }) => {
@@ -71,26 +73,16 @@ export const LogbookEntries: CollectionConfig = {
       ],
     },
     {
-      name: 'author',
-      type: 'select',
-      required: true,
-      defaultValue: 'self',
-      options: [
-        { label: 'Intern (self)', value: 'self' },
-        { label: 'Supervisor', value: 'supervisor' },
-      ],
-    },
-    {
       name: 'date',
       type: 'date',
       required: true,
     },
-    // Driver logbook — intern's own per-trip entries (§6.6)
+    // Driver logbook — per-trip entries (§6.6)
     {
       name: 'trip',
       type: 'group',
       admin: {
-        condition: (_, siblingData) => siblingData?.type === 'driver' && siblingData?.author === 'self',
+        condition: (_, siblingData) => siblingData?.type === 'driver',
       },
       fields: [
         { name: 'area', type: 'text' },
@@ -109,19 +101,6 @@ export const LogbookEntries: CollectionConfig = {
           ],
         },
         { name: 'lessons', type: 'textarea' },
-      ],
-    },
-    // Driver logbook — supervisor/"Mentor" rollup (§6.6)
-    {
-      name: 'supervisorRollup',
-      type: 'group',
-      admin: {
-        condition: (_, siblingData) => siblingData?.type === 'driver' && siblingData?.author === 'supervisor',
-      },
-      fields: [
-        { name: 'distanceDriven', type: 'number' },
-        { name: 'areaRegion', type: 'text' },
-        { name: 'areasOfImprovement', type: 'textarea' },
       ],
     },
     // Non-driver logbook — per-week entries (§6.6)

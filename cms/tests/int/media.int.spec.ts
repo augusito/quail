@@ -30,14 +30,14 @@ async function uploadDummyImage(
     .png()
     .toBuffer()
   return payload.create({
-    collection: 'media-assets',
+    collection: 'media',
     data,
     file: { data: pngBuffer, mimetype: 'image/png', name: `test-${Date.now()}-${Math.random()}.png`, size: pngBuffer.length },
     overrideAccess: true,
   })
 }
 
-describe('MediaAssets read scoping — §4 "unless granted per cohort" trainer exception', () => {
+describe('Media read scoping — §4 "unless granted per cohort" trainer exception', () => {
   beforeAll(async () => {
     const payloadConfig = await config
     payload = await getPayload({ config: payloadConfig })
@@ -52,7 +52,7 @@ describe('MediaAssets read scoping — §4 "unless granted per cohort" trainer e
   })
 
   afterAll(async () => {
-    await payload.delete({ collection: 'media-assets', where: {}, overrideAccess: true })
+    await payload.delete({ collection: 'media', where: {}, overrideAccess: true })
     await payload.delete({ collection: 'cohorts', where: {}, overrideAccess: true })
     await Promise.all(
       Object.values(seeded).map((u) => payload.delete({ collection: 'users', id: u.id, overrideAccess: true })),
@@ -68,7 +68,7 @@ describe('MediaAssets read scoping — §4 "unless granted per cohort" trainer e
     const asset = await uploadDummyImage(payload, { cohort: cohort.id, visibilityScope: 'admin-only' as const })
 
     const found = await payload.findByID({
-      collection: 'media-assets',
+      collection: 'media',
       id: asset.id,
       overrideAccess: false,
       user: seeded.admin,
@@ -93,7 +93,7 @@ describe('MediaAssets read scoping — §4 "unless granted per cohort" trainer e
     const asset = await uploadDummyImage(payload, { cohort: cohort.id, visibilityScope: 'cohort-extended' as const })
 
     const found = await payload.findByID({
-      collection: 'media-assets',
+      collection: 'media',
       id: asset.id,
       overrideAccess: false,
       user: seeded.grantedTrainer,
@@ -118,7 +118,7 @@ describe('MediaAssets read scoping — §4 "unless granted per cohort" trainer e
     const asset = await uploadDummyImage(payload, { cohort: cohort.id, visibilityScope: 'admin-only' as const })
 
     const found = await payload.findByID({
-      collection: 'media-assets',
+      collection: 'media',
       id: asset.id,
       overrideAccess: false,
       user: seeded.grantedTrainer,
@@ -143,7 +143,7 @@ describe('MediaAssets read scoping — §4 "unless granted per cohort" trainer e
     const asset = await uploadDummyImage(payload, { cohort: cohort.id, visibilityScope: 'cohort-extended' as const })
 
     const found = await payload.findByID({
-      collection: 'media-assets',
+      collection: 'media',
       id: asset.id,
       overrideAccess: false,
       user: seeded.ungrantedTrainer,
@@ -161,7 +161,7 @@ describe('MediaAssets read scoping — §4 "unless granted per cohort" trainer e
     const asset = await uploadDummyImage(payload, { cohort: cohort.id, visibilityScope: 'cohort-extended' as const })
 
     const found = await payload.findByID({
-      collection: 'media-assets',
+      collection: 'media',
       id: asset.id,
       overrideAccess: false,
       user: seeded.intern,
@@ -188,7 +188,7 @@ describe('MediaAssets read scoping — §4 "unless granted per cohort" trainer e
     await expect(
       uploadDummyImage(payload, { cohort: cohort.id, visibilityScope: 'cohort-extended' as const }).then(() =>
         payload.create({
-          collection: 'media-assets',
+          collection: 'media',
           data: { cohort: cohort.id, visibilityScope: 'cohort-extended' as const },
           overrideAccess: false,
           user: seeded.grantedTrainer,
@@ -199,7 +199,7 @@ describe('MediaAssets read scoping — §4 "unless granted per cohort" trainer e
 
     await expect(
       payload.update({
-        collection: 'media-assets',
+        collection: 'media',
         id: asset.id,
         data: { consentGiven: true },
         overrideAccess: false,
@@ -209,7 +209,7 @@ describe('MediaAssets read scoping — §4 "unless granted per cohort" trainer e
 
     await expect(
       payload.delete({
-        collection: 'media-assets',
+        collection: 'media',
         id: asset.id,
         overrideAccess: false,
         user: seeded.grantedTrainer,

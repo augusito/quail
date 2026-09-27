@@ -22,10 +22,10 @@ export async function getSupervisedInternIds(payload: Payload, supervisorId: ID)
   return [...new Set(docs.map((doc) => doc.intern as ID))]
 }
 
-/** "Own modules" for a trainer (§4, §6.5, §10) is derived from TrainingSession.trainer, since Module itself has no trainer field. */
+/** "Own modules" for a trainer (§4, §6.5, §10) is derived from Session.trainer, since Module itself has no trainer field. */
 export async function getTrainerModuleIds(payload: Payload, trainerId: ID): Promise<ID[]> {
   const { docs } = await payload.find({
-    collection: 'training-sessions',
+    collection: 'sessions',
     where: { trainer: { equals: trainerId } },
     limit: 0,
     depth: 0,
@@ -38,7 +38,7 @@ export async function getTrainerModuleIds(payload: Payload, trainerId: ID): Prom
  * §6.1: "Resigned (non-completing) alumni are flagged internally as
  * distinct from graduated alumni, so Talent Board eligibility can be
  * limited to actual graduates while both still share the same Alumni Hub
- * access." AlumniProfile itself doesn't record why an intern left — that's
+ * access." Alumna itself doesn't record why an intern left — that's
  * Enrollment.outcome — so public Talent Board visibility (§6.9) has to be
  * cross-checked against it here.
  */
@@ -72,7 +72,7 @@ export async function getAlumniInternIds(payload: Payload): Promise<ID[]> {
 
 /**
  * Files (src/collections/Files.ts) is shared plumbing under Contracts,
- * Documents, and ModuleNotes, each of which already scopes who may
+ * Documents, and Notes, each of which already scopes who may
  * reference a given row (e.g. only a document's own intern, only a
  * contract's own trainer). This resolves the set of File ids a given user
  * is entitled to see by walking those same relationships, plus their own
@@ -80,7 +80,7 @@ export async function getAlumniInternIds(payload: Payload): Promise<ID[]> {
  * uploaded, which "only the uploader" would have wrongly blocked.
  */
 export async function getAccessibleFileIds(payload: Payload, userId: ID): Promise<ID[]> {
-  const [ownUploads, documents, contracts, moduleNotes] = await Promise.all([
+  const [ownUploads, documents, contracts, notes] = await Promise.all([
     payload.find({
       collection: 'files',
       where: { uploadedBy: { equals: userId } },
@@ -103,7 +103,7 @@ export async function getAccessibleFileIds(payload: Payload, userId: ID): Promis
       overrideAccess: true,
     }),
     payload.find({
-      collection: 'module-notes',
+      collection: 'notes',
       where: { trainer: { equals: userId } },
       limit: 0,
       depth: 0,
@@ -115,7 +115,7 @@ export async function getAccessibleFileIds(payload: Payload, userId: ID): Promis
   for (const file of ownUploads.docs) ids.add(file.id as ID)
   for (const doc of documents.docs) if (doc.file) ids.add(doc.file as ID)
   for (const contract of contracts.docs) if (contract.file) ids.add(contract.file as ID)
-  for (const note of moduleNotes.docs) {
+  for (const note of notes.docs) {
     if (note.slideDeck) ids.add(note.slideDeck as ID)
     if (note.assignment) ids.add(note.assignment as ID)
     if (note.assessmentReport) ids.add(note.assessmentReport as ID)
@@ -137,4 +137,22 @@ export async function getMediaGrantedCohortIds(payload: Payload, trainerId: ID):
     overrideAccess: true,
   })
   return docs.map((doc) => doc.id as ID)
+}
+
+/**
+ * §5 (proposal v2): `Education.intern` relates to the `interns` profile
+ * collection, not directly to `users` — so an intern's own-record access
+ * can't compare `data.intern` to `user.id` the way `adminOrRoleOwnsField`
+ * does elsewhere. Resolves the current user's own `interns` row id (each
+ * intern has exactly one, set once at self-registration, §6.2).
+ */
+export async function getOwnInternProfileId(payload: Payload, userId: ID): Promise<ID | null> {
+  const { docs } = await payload.find({
+    collection: 'interns',
+    where: { user: { equals: userId } },
+    limit: 1,
+    depth: 0,
+    overrideAccess: true,
+  })
+  return docs[0]?.id ?? null
 }

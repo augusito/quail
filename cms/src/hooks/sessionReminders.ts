@@ -1,6 +1,6 @@
 import type { CollectionBeforeChangeHook, CollectionAfterChangeHook } from 'payload'
 
-import type { TrainingSession } from '../payload-types'
+import type { Session } from '../payload-types'
 
 const REMINDER_LEAD_MS = 2 * 60 * 60 * 1000
 
@@ -12,7 +12,7 @@ const REMINDER_LEAD_MS = 2 * 60 * 60 * 1000
  * write) rather than a follow-up update, so it can't trigger the afterChange
  * hook a second time.
  */
-export const resetReminderStatusOnReschedule: CollectionBeforeChangeHook<TrainingSession> = ({
+export const resetReminderStatusOnReschedule: CollectionBeforeChangeHook<Session> = ({
   data,
   originalDoc,
   operation,
@@ -40,7 +40,7 @@ export const resetReminderStatusOnReschedule: CollectionBeforeChangeHook<Trainin
  * the request that created/rescheduled the session, and so retries are
  * Payload's job-queue retry, not ours to hand-roll.
  */
-export const scheduleSessionReminder: CollectionAfterChangeHook<TrainingSession> = async ({
+export const scheduleSessionReminder: CollectionAfterChangeHook<Session> = async ({
   doc,
   previousDoc,
   operation,

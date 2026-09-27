@@ -58,19 +58,19 @@ describe('Public Talent Board access (§6.9, §6.1 graduate-only eligibility)', 
     })
 
     await payload.create({
-      collection: 'alumni-profiles',
+      collection: 'alumnae',
       data: { intern: graduatedIntern.id, name: 'Graduated Alum', optedIn: true },
       overrideAccess: true,
     })
     await payload.create({
-      collection: 'alumni-profiles',
+      collection: 'alumnae',
       data: { intern: resignedIntern.id, name: 'Resigned Alum', optedIn: true },
       overrideAccess: true,
     })
   })
 
   afterAll(async () => {
-    for (const collection of ['alumni-profiles', 'enrollments', 'cohorts'] as const) {
+    for (const collection of ['alumnae', 'enrollments', 'cohorts'] as const) {
       await payload.delete({ collection, where: {}, overrideAccess: true })
     }
     await Promise.all(
@@ -80,7 +80,7 @@ describe('Public Talent Board access (§6.9, §6.1 graduate-only eligibility)', 
 
   it('the public Talent Board (unauthenticated) shows a graduated, opted-in alum', async () => {
     const { docs } = await payload.find({
-      collection: 'alumni-profiles',
+      collection: 'alumnae',
       overrideAccess: false,
       user: null,
     })
@@ -90,7 +90,7 @@ describe('Public Talent Board access (§6.9, §6.1 graduate-only eligibility)', 
 
   it("the public Talent Board never shows a resigned (non-completing) alum, even if opted in", async () => {
     const { docs } = await payload.find({
-      collection: 'alumni-profiles',
+      collection: 'alumnae',
       overrideAccess: false,
       user: null,
     })
@@ -100,7 +100,7 @@ describe('Public Talent Board access (§6.9, §6.1 graduate-only eligibility)', 
 
   it('a resigned alum can still read their own profile (Alumni Hub access, §6.10) even though the public board hides it', async () => {
     const { docs } = await payload.find({
-      collection: 'alumni-profiles',
+      collection: 'alumnae',
       where: { intern: { equals: seeded.resignedIntern.id } },
       overrideAccess: false,
       user: seeded.resignedIntern,
@@ -111,7 +111,7 @@ describe('Public Talent Board access (§6.9, §6.1 graduate-only eligibility)', 
 
   it('admin sees every profile regardless of opt-in or graduation status', async () => {
     const { docs } = await payload.find({
-      collection: 'alumni-profiles',
+      collection: 'alumnae',
       overrideAccess: false,
       user: seeded.admin,
     })

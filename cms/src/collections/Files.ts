@@ -10,15 +10,15 @@ const readAccess: Access = async ({ req: { user, payload } }): Promise<AccessRes
   return { id: { in: fileIds } }
 }
 
-// Generic document uploads (contracts, statutory documents, module-note
-// deliverables). Kept separate from Media (images only) and MediaAssets
-// (the consent-tracked cohort media library, §6.4) since these are working
-// documents, not promotional media.
+// Generic document uploads (contracts, statutory documents, note
+// deliverables). Kept separate from Images (generic image uploads) and
+// Media (the consent-tracked cohort media library, §6.4) since these are
+// working documents, not promotional media.
 //
 // These hold sensitive content (signed contracts, statutory IDs), so this
-// is deliberately NOT public like Media. It isn't governed by a single §4
+// is deliberately NOT public like Images. It isn't governed by a single §4
 // matrix row either — it's shared plumbing under Contracts/Documents/
-// ModuleNotes, each of which already scopes who may reference a file.
+// Notes, each of which already scopes who may reference a file.
 // readAccess walks those same relationships (getAccessibleFileIds) rather
 // than a flat "any authenticated user" — e.g. a trainer can read a
 // contract's file *admin* uploaded (their own contract), but not an

@@ -68,22 +68,25 @@ export interface Config {
   blocks: {};
   collections: {
     users: User;
-    media: Media;
+    trainers: Trainer;
+    interns: Intern;
+    education: Education;
+    images: Image;
     files: File;
     cohorts: Cohort;
     enrollments: Enrollment;
     invites: Invite;
     contracts: Contract;
     modules: Module;
-    'training-sessions': TrainingSession;
-    'module-notes': ModuleNote;
+    sessions: Session;
+    notes: Note;
     scores: Score;
-    'logbook-entries': LogbookEntry;
+    logbooks: Logbook;
     evaluations: Evaluation;
     workplans: Workplan;
     documents: Document;
-    'media-assets': MediaAsset;
-    'alumni-profiles': AlumniProfile;
+    media: Media;
+    alumnae: Alumna;
     announcements: Announcement;
     'payload-kv': PayloadKv;
     'payload-jobs': PayloadJob;
@@ -94,22 +97,25 @@ export interface Config {
   collectionsJoins: {};
   collectionsSelect: {
     users: UsersSelect<false> | UsersSelect<true>;
-    media: MediaSelect<false> | MediaSelect<true>;
+    trainers: TrainersSelect<false> | TrainersSelect<true>;
+    interns: InternsSelect<false> | InternsSelect<true>;
+    education: EducationSelect<false> | EducationSelect<true>;
+    images: ImagesSelect<false> | ImagesSelect<true>;
     files: FilesSelect<false> | FilesSelect<true>;
     cohorts: CohortsSelect<false> | CohortsSelect<true>;
     enrollments: EnrollmentsSelect<false> | EnrollmentsSelect<true>;
     invites: InvitesSelect<false> | InvitesSelect<true>;
     contracts: ContractsSelect<false> | ContractsSelect<true>;
     modules: ModulesSelect<false> | ModulesSelect<true>;
-    'training-sessions': TrainingSessionsSelect<false> | TrainingSessionsSelect<true>;
-    'module-notes': ModuleNotesSelect<false> | ModuleNotesSelect<true>;
+    sessions: SessionsSelect<false> | SessionsSelect<true>;
+    notes: NotesSelect<false> | NotesSelect<true>;
     scores: ScoresSelect<false> | ScoresSelect<true>;
-    'logbook-entries': LogbookEntriesSelect<false> | LogbookEntriesSelect<true>;
+    logbooks: LogbooksSelect<false> | LogbooksSelect<true>;
     evaluations: EvaluationsSelect<false> | EvaluationsSelect<true>;
     workplans: WorkplansSelect<false> | WorkplansSelect<true>;
     documents: DocumentsSelect<false> | DocumentsSelect<true>;
-    'media-assets': MediaAssetsSelect<false> | MediaAssetsSelect<true>;
-    'alumni-profiles': AlumniProfilesSelect<false> | AlumniProfilesSelect<true>;
+    media: MediaSelect<false> | MediaSelect<true>;
+    alumnae: AlumnaeSelect<false> | AlumnaeSelect<true>;
     announcements: AnnouncementsSelect<false> | AnnouncementsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-jobs': PayloadJobsSelect<false> | PayloadJobsSelect<true>;
@@ -191,9 +197,98 @@ export interface User {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "media".
+ * via the `definition` "trainers".
  */
-export interface Media {
+export interface Trainer {
+  id: number;
+  /**
+   * The trainer's login account. Set once at self-registration (§6.2).
+   */
+  user: number | User;
+  name: string;
+  occupation: string;
+  address?: string | null;
+  phone: string;
+  email: string;
+  /**
+   * National identifier or passport number (§5, §6.2, §7 — sensitive).
+   */
+  nationalIdNumber: string;
+  /**
+   * KRA PIN (§5, §6.2, §7 — sensitive).
+   */
+  kraPin: string;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "interns".
+ */
+export interface Intern {
+  id: number;
+  /**
+   * The intern's login account. Set once at self-registration (§6.2).
+   */
+  user: number | User;
+  name: string;
+  /**
+   * Statutory/records purposes only — no minimum-age gate is enforced at registration (§6.2, confirmed not needed for v1).
+   */
+  dateOfBirth: string;
+  gender: 'female' | 'male' | 'other';
+  nationality: string;
+  address?: string | null;
+  phone: string;
+  email: string;
+  /**
+   * National identifier or passport number (§5, §6.2, §7 — sensitive).
+   */
+  nationalIdNumber: string;
+  /**
+   * KRA PIN (§5, §6.2, §7 — sensitive).
+   */
+  kraPin: string;
+  /**
+   * SHIF (formerly SHA) number (§5, §6.2, §7 — sensitive).
+   */
+  shifNumber: string;
+  /**
+   * NSSF number (§5, §6.2, §7 — sensitive).
+   */
+  nssfNumber: string;
+  /**
+   * "Exactly one required contact" (§5) — a single next-of-kin record, not a repeatable list. Name/relationship/phone are the load-bearing fields required to actually reach someone; address/email are collected when available but not required, same judgment call as the optional email/phone on the public Talent Board listing (§6.9).
+   */
+  nextOfKin: {
+    name: string;
+    relationship: string;
+    address?: string | null;
+    phone: string;
+    email?: string | null;
+  };
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "education".
+ */
+export interface Education {
+  id: number;
+  intern: number | Intern;
+  school: string;
+  startDate?: string | null;
+  endDate?: string | null;
+  qualification: string;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "images".
+ */
+export interface Image {
   id: number;
   alt: string;
   updatedAt: string;
@@ -242,7 +337,7 @@ export interface Cohort {
   endDate: string;
   status: 'draft' | 'open' | 'active' | 'closed';
   /**
-   * §4 "Media library access… unless granted per cohort" — trainers listed here can view this cohort's cohort-extended media-assets (MediaAssets.ts). Admin-only assets stay admin-only regardless.
+   * §4 "Media library access… unless granted per cohort" — trainers listed here can view this cohort's cohort-extended media (Media.ts). Admin-only assets stay admin-only regardless.
    */
   mediaAccessGrantedTo?: (number | User)[] | null;
   updatedAt: string;
@@ -272,7 +367,15 @@ export interface Enrollment {
 export interface Invite {
   id: number;
   cohort: number | Cohort;
-  track: 'truck-driving' | 'mechanics' | 'ict' | 'supply-chain' | 'business-management';
+  role: 'intern' | 'trainer';
+  /**
+   * Only this address can complete registration with the resulting link (§6.2).
+   */
+  email: string;
+  /**
+   * Which track this intern is auto-enrolled into. Not used for trainer invites.
+   */
+  track?: ('truck-driving' | 'mechanics' | 'ict' | 'supply-chain' | 'business-management') | null;
   /**
    * Auto-generated. The invite link is https://<app>/register?token=<this>.
    */
@@ -282,9 +385,9 @@ export interface Invite {
    */
   expiresAt?: string | null;
   /**
-   * Admin's discretion, e.g. if the link leaked (§6.2). A revoked invite is rejected the same as an expired one.
+   * Set automatically: 'used' once registration completes, 'expired' the first time a stale invite is checked past expiresAt. 'Revoked' is admin's discretion (e.g. entered the wrong email, or the person is no longer eligible) — rejected the same as an expired one.
    */
-  revoked?: boolean | null;
+  status: 'sent' | 'used' | 'expired' | 'revoked';
   createdBy?: (number | null) | User;
   updatedAt: string;
   createdAt: string;
@@ -331,9 +434,9 @@ export interface Module {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "training-sessions".
+ * via the `definition` "sessions".
  */
-export interface TrainingSession {
+export interface Session {
   id: number;
   module: number | Module;
   trainer: number | User;
@@ -346,11 +449,11 @@ export interface TrainingSession {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "module-notes".
+ * via the `definition` "notes".
  */
-export interface ModuleNote {
+export interface Note {
   id: number;
-  session: number | TrainingSession;
+  session: number | Session;
   trainer: number | User;
   /**
    * Prose write-up of what was taught.
@@ -384,14 +487,13 @@ export interface Score {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "logbook-entries".
+ * via the `definition` "logbooks".
  */
-export interface LogbookEntry {
+export interface Logbook {
   id: number;
   intern: number | User;
   cohort?: (number | null) | Cohort;
   type: 'driver' | 'non-driver';
-  author: 'self' | 'supervisor';
   date: string;
   trip?: {
     area?: string | null;
@@ -400,11 +502,6 @@ export interface LogbookEntry {
     timeTo?: string | null;
     activities?: ('dispatch' | 'offloading' | 'fueling' | 'checkpoint')[] | null;
     lessons?: string | null;
-  };
-  supervisorRollup?: {
-    distanceDriven?: number | null;
-    areaRegion?: string | null;
-    areasOfImprovement?: string | null;
   };
   week?: {
     startDate?: string | null;
@@ -456,7 +553,7 @@ export interface Workplan {
 export interface Document {
   id: number;
   intern: number | User;
-  type: 'national-id' | 'driving-licence' | 'certificate-of-good-conduct' | 'sha' | 'kra-pin' | 'nssf' | 'other';
+  type: 'national-id' | 'driving-licence' | 'certificate-of-good-conduct' | 'sha-shif' | 'kra-pin' | 'nssf' | 'other';
   file: number | File;
   verificationStatus: 'pending' | 'verified' | 'rejected';
   rejectionReason?: string | null;
@@ -465,9 +562,9 @@ export interface Document {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "media-assets".
+ * via the `definition` "media".
  */
-export interface MediaAsset {
+export interface Media {
   id: number;
   cohort: number | Cohort;
   visibilityScope: 'admin-only' | 'cohort-extended';
@@ -489,16 +586,16 @@ export interface MediaAsset {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "alumni-profiles".
+ * via the `definition` "alumnae".
  */
-export interface AlumniProfile {
+export interface Alumna {
   id: number;
   intern: number | User;
   /**
    * The public Talent Board display name (§6.9 public field) — separate from Users.name, since the intern's account isn't publicly readable.
    */
   name: string;
-  photo?: (number | null) | Media;
+  photo?: (number | null) | Image;
   employmentStatus?: string | null;
   /**
    * Driving class certifications, defensive driving certification, diploma/course names and issuing institutions (§6.9).
@@ -662,8 +759,20 @@ export interface PayloadLockedDocument {
         value: number | User;
       } | null)
     | ({
-        relationTo: 'media';
-        value: number | Media;
+        relationTo: 'trainers';
+        value: number | Trainer;
+      } | null)
+    | ({
+        relationTo: 'interns';
+        value: number | Intern;
+      } | null)
+    | ({
+        relationTo: 'education';
+        value: number | Education;
+      } | null)
+    | ({
+        relationTo: 'images';
+        value: number | Image;
       } | null)
     | ({
         relationTo: 'files';
@@ -690,20 +799,20 @@ export interface PayloadLockedDocument {
         value: number | Module;
       } | null)
     | ({
-        relationTo: 'training-sessions';
-        value: number | TrainingSession;
+        relationTo: 'sessions';
+        value: number | Session;
       } | null)
     | ({
-        relationTo: 'module-notes';
-        value: number | ModuleNote;
+        relationTo: 'notes';
+        value: number | Note;
       } | null)
     | ({
         relationTo: 'scores';
         value: number | Score;
       } | null)
     | ({
-        relationTo: 'logbook-entries';
-        value: number | LogbookEntry;
+        relationTo: 'logbooks';
+        value: number | Logbook;
       } | null)
     | ({
         relationTo: 'evaluations';
@@ -718,12 +827,12 @@ export interface PayloadLockedDocument {
         value: number | Document;
       } | null)
     | ({
-        relationTo: 'media-assets';
-        value: number | MediaAsset;
+        relationTo: 'media';
+        value: number | Media;
       } | null)
     | ({
-        relationTo: 'alumni-profiles';
-        value: number | AlumniProfile;
+        relationTo: 'alumnae';
+        value: number | Alumna;
       } | null)
     | ({
         relationTo: 'announcements';
@@ -799,9 +908,67 @@ export interface UsersSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "media_select".
+ * via the `definition` "trainers_select".
  */
-export interface MediaSelect<T extends boolean = true> {
+export interface TrainersSelect<T extends boolean = true> {
+  user?: T;
+  name?: T;
+  occupation?: T;
+  address?: T;
+  phone?: T;
+  email?: T;
+  nationalIdNumber?: T;
+  kraPin?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "interns_select".
+ */
+export interface InternsSelect<T extends boolean = true> {
+  user?: T;
+  name?: T;
+  dateOfBirth?: T;
+  gender?: T;
+  nationality?: T;
+  address?: T;
+  phone?: T;
+  email?: T;
+  nationalIdNumber?: T;
+  kraPin?: T;
+  shifNumber?: T;
+  nssfNumber?: T;
+  nextOfKin?:
+    | T
+    | {
+        name?: T;
+        relationship?: T;
+        address?: T;
+        phone?: T;
+        email?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "education_select".
+ */
+export interface EducationSelect<T extends boolean = true> {
+  intern?: T;
+  school?: T;
+  startDate?: T;
+  endDate?: T;
+  qualification?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "images_select".
+ */
+export interface ImagesSelect<T extends boolean = true> {
   alt?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -866,10 +1033,12 @@ export interface EnrollmentsSelect<T extends boolean = true> {
  */
 export interface InvitesSelect<T extends boolean = true> {
   cohort?: T;
+  role?: T;
+  email?: T;
   track?: T;
   token?: T;
   expiresAt?: T;
-  revoked?: T;
+  status?: T;
   createdBy?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -902,9 +1071,9 @@ export interface ModulesSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "training-sessions_select".
+ * via the `definition` "sessions_select".
  */
-export interface TrainingSessionsSelect<T extends boolean = true> {
+export interface SessionsSelect<T extends boolean = true> {
   module?: T;
   trainer?: T;
   cohort?: T;
@@ -916,9 +1085,9 @@ export interface TrainingSessionsSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "module-notes_select".
+ * via the `definition` "notes_select".
  */
-export interface ModuleNotesSelect<T extends boolean = true> {
+export interface NotesSelect<T extends boolean = true> {
   session?: T;
   trainer?: T;
   content?: T;
@@ -943,13 +1112,12 @@ export interface ScoresSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "logbook-entries_select".
+ * via the `definition` "logbooks_select".
  */
-export interface LogbookEntriesSelect<T extends boolean = true> {
+export interface LogbooksSelect<T extends boolean = true> {
   intern?: T;
   cohort?: T;
   type?: T;
-  author?: T;
   date?: T;
   trip?:
     | T
@@ -960,13 +1128,6 @@ export interface LogbookEntriesSelect<T extends boolean = true> {
         timeTo?: T;
         activities?: T;
         lessons?: T;
-      };
-  supervisorRollup?:
-    | T
-    | {
-        distanceDriven?: T;
-        areaRegion?: T;
-        areasOfImprovement?: T;
       };
   week?:
     | T
@@ -1023,9 +1184,9 @@ export interface DocumentsSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "media-assets_select".
+ * via the `definition` "media_select".
  */
-export interface MediaAssetsSelect<T extends boolean = true> {
+export interface MediaSelect<T extends boolean = true> {
   cohort?: T;
   visibilityScope?: T;
   consentGiven?: T;
@@ -1043,9 +1204,9 @@ export interface MediaAssetsSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "alumni-profiles_select".
+ * via the `definition` "alumnae_select".
  */
-export interface AlumniProfilesSelect<T extends boolean = true> {
+export interface AlumnaeSelect<T extends boolean = true> {
   intern?: T;
   name?: T;
   photo?: T;

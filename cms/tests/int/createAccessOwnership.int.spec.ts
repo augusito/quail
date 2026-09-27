@@ -64,12 +64,12 @@ describe('create access rejects naming someone else as the owner field', () => {
 
   afterAll(async () => {
     for (const collection of [
-      'module-notes',
+      'notes',
       'documents',
       'workplans',
-      'alumni-profiles',
+      'alumnae',
       'files',
-      'training-sessions',
+      'sessions',
       'modules',
       'cohorts',
     ] as const) {
@@ -88,7 +88,7 @@ describe('create access rejects naming someone else as the owner field', () => {
     })
     const trainingModule = await payload.create({ collection: 'modules', data: { track: 'ict', name: 'CAO Module' }, overrideAccess: true })
     const session = await payload.create({
-      collection: 'training-sessions',
+      collection: 'sessions',
       data: { module: trainingModule.id, trainer: seeded.trainerA.id, cohort: cohort.id, scheduledDate: '2026-02-01', status: 'scheduled' as const },
       overrideAccess: true,
     })
@@ -96,7 +96,7 @@ describe('create access rejects naming someone else as the owner field', () => {
     // Naming someone else: denied
     await expect(
       payload.create({
-        collection: 'module-notes',
+        collection: 'notes',
         data: { session: session.id, trainer: seeded.trainerB.id },
         overrideAccess: false,
         user: seeded.trainerA,
@@ -105,7 +105,7 @@ describe('create access rejects naming someone else as the owner field', () => {
 
     // Naming themselves: still allowed
     const ownNote = await payload.create({
-      collection: 'module-notes',
+      collection: 'notes',
       data: { session: session.id, trainer: seeded.trainerA.id },
       overrideAccess: false,
       user: seeded.trainerA,
@@ -167,7 +167,7 @@ describe('create access rejects naming someone else as the owner field', () => {
     // Naming someone else: denied
     await expect(
       payload.create({
-        collection: 'alumni-profiles',
+        collection: 'alumnae',
         data: { intern: seeded.internB.id, name: 'Someone Else' },
         overrideAccess: false,
         user: seeded.internA,
@@ -176,7 +176,7 @@ describe('create access rejects naming someone else as the owner field', () => {
 
     // Naming themselves: still allowed
     const ownProfile = await payload.create({
-      collection: 'alumni-profiles',
+      collection: 'alumnae',
       data: { intern: seeded.internA.id, name: 'CAO Intern A' },
       overrideAccess: false,
       user: seeded.internA,

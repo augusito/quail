@@ -49,7 +49,7 @@ export const sendSessionReminderTask: TaskConfig<{ input: Input; output: Output 
     const { payload } = req
 
     const session = await payload.findByID({
-      collection: 'training-sessions',
+      collection: 'sessions',
       id: input.sessionId,
       depth: 1,
       overrideAccess: true,
@@ -115,7 +115,7 @@ export const sendSessionReminderTask: TaskConfig<{ input: Input; output: Output 
 
     if (input.reason === 'reminder') {
       await payload.update({
-        collection: 'training-sessions',
+        collection: 'sessions',
         id: input.sessionId,
         data: { reminderStatus: 'sent' },
         overrideAccess: true,
