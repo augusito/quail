@@ -1,7 +1,7 @@
 import type { CollectionConfig } from 'payload'
 
 import { hasRole, isAdmin, roleOnlyField } from '../access/roles'
-import { getSupervisedInternIds } from '../access/scoping'
+import { getInProgressInternIds, getSupervisedInternIds } from '../access/scoping'
 
 // §6.6 (proposal v2): "The sample driver logbook's second sheet ('Mentor
 // Driver' — distance driven, area, areas of improvement per intern) is
@@ -25,10 +25,18 @@ export const Logbook: CollectionConfig = {
     defaultColumns: ['intern', 'type', 'status'],
   },
   access: {
-    create: async ({ req: { user }, data }) => {
+    // §6.10: an intern may only create/update her own logbook entries while
+    // her cohort enrollment is still in-progress — once she's graduated,
+    // resigned, or been terminated, her logbook history is read-only (below
+    // checked against getInProgressInternIds, the same Enrollment.outcome
+    // cross-check getGraduatedInternIds/getAlumniInternIds already use for
+    // Alumna/Announcements).
+    create: async ({ req: { user, payload }, data }) => {
       if (hasRole(user, 'admin')) return true
-      if (hasRole(user, 'intern')) return data?.intern === user!.id
-      return false
+      if (!hasRole(user, 'intern')) return false
+      if (data?.intern !== user!.id) return false
+      const inProgressIds = await getInProgressInternIds(payload)
+      return inProgressIds.some((id) => id === user!.id)
     },
     read: async ({ req: { user, payload } }) => {
       if (!user) return false
@@ -42,7 +50,11 @@ export const Logbook: CollectionConfig = {
     },
     update: async ({ req: { user, payload } }) => {
       if (hasRole(user, 'admin')) return true
-      if (hasRole(user, 'intern')) return { intern: { equals: user!.id } }
+      if (hasRole(user, 'intern')) {
+        const inProgressIds = await getInProgressInternIds(payload)
+        if (!inProgressIds.some((id) => id === user!.id)) return false
+        return { intern: { equals: user!.id } }
+      }
       if (hasRole(user, 'supervisor')) {
         const internIds = await getSupervisedInternIds(payload, user!.id)
         return { intern: { in: internIds } }

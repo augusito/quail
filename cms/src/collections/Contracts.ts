@@ -1,6 +1,6 @@
 import type { CollectionConfig } from 'payload'
 
-import { adminOrRoleOwnsField, hasRole, isAdmin } from '../access/roles'
+import { adminOnlyField, adminOrRoleOwnsField, isAdmin } from '../access/roles'
 import { validateContractStatusTransition } from '../hooks/contractLifecycle'
 
 // §6.4: admin uploads terms, trainer downloads/signs/scans/uploads back.
@@ -65,6 +65,18 @@ export const Contracts: CollectionConfig = {
     {
       name: 'ratePerSession',
       type: 'number',
+      // §6.4: "admin uploads the contract terms" — the rate is one of those
+      // terms, set by admin, not something the trainer negotiates by editing
+      // their own contract row. Row-level access above grants a trainer
+      // write access to their own contract (to sign, upload the file, flag
+      // release), but that shouldn't extend to unilaterally changing the
+      // agreed rate — so this field, unlike the rest of the collection,
+      // needs its own admin-only lock (same pattern as
+      // Documents.verificationStatus).
+      access: {
+        create: adminOnlyField,
+        update: adminOnlyField,
+      },
       admin: {
         description: 'Reference only — used to produce session-count evidence for the trainer\'s own invoice. Not processed for payment (§3, §6.4).',
       },

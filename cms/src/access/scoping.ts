@@ -35,6 +35,53 @@ export async function getTrainerModuleIds(payload: Payload, trainerId: ID): Prom
 }
 
 /**
+ * §6.5: the driving-skills checkpoint exception is scoped to "each
+ * driver-track intern" — used by Evaluations' create access
+ * (src/collections/Evaluations.ts) so a trainer can only author a
+ * driving-skills-baseline/-final evaluation for an intern actually enrolled
+ * in the truck-driving track for that cohort, not any intern on any track.
+ */
+export async function isInternOnTruckDrivingTrack(
+  payload: Payload,
+  internId: ID,
+  cohortId: ID,
+): Promise<boolean> {
+  const { totalDocs } = await payload.find({
+    collection: 'enrollments',
+    where: {
+      and: [
+        { intern: { equals: internId } },
+        { cohort: { equals: cohortId } },
+        { track: { equals: 'truck-driving' } },
+      ],
+    },
+    limit: 0,
+    depth: 0,
+    overrideAccess: true,
+  })
+  return totalDocs > 0
+}
+
+/**
+ * §6.10: "their logbook history becomes read-only once the cohort ends —
+ * they can view past entries but not modify them." Resolves which interns
+ * are still mid-cohort (i.e. not yet graduated/resigned/terminated) so
+ * Logbook's own-record write access (src/collections/Logbook.ts) can be
+ * scoped to them, the same way getGraduatedInternIds/getAlumniInternIds
+ * cross-check Enrollment.outcome for Alumna/Announcements below.
+ */
+export async function getInProgressInternIds(payload: Payload): Promise<ID[]> {
+  const { docs } = await payload.find({
+    collection: 'enrollments',
+    where: { outcome: { equals: 'in-progress' } },
+    limit: 0,
+    depth: 0,
+    overrideAccess: true,
+  })
+  return [...new Set(docs.map((doc) => doc.intern as ID))]
+}
+
+/**
  * §6.1: "Resigned (non-completing) alumni are flagged internally as
  * distinct from graduated alumni, so Talent Board eligibility can be
  * limited to actual graduates while both still share the same Alumni Hub
