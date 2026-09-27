@@ -1,6 +1,6 @@
 import type { Access, AccessResult, CollectionConfig, Where } from 'payload'
 
-import { adminOrRoleOwnsField, hasRole, isAdmin } from '../access/roles'
+import { adminOrRoleOwnsField, adminOrRoleOwnsFieldOnCreate, hasRole, isAdmin } from '../access/roles'
 import { getGraduatedInternIds } from '../access/scoping'
 
 const readAccess: Access = async ({ req: { user, payload } }): Promise<AccessResult> => {
@@ -40,7 +40,7 @@ export const Alumna: CollectionConfig = {
     defaultColumns: ['name', 'intern', 'optedIn'],
   },
   access: {
-    create: adminOrRoleOwnsField('intern', 'intern'),
+    create: adminOrRoleOwnsFieldOnCreate('intern', 'intern'),
     read: readAccess,
     update: adminOrRoleOwnsField('intern', 'intern'),
     delete: isAdmin,
