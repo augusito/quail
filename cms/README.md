@@ -68,8 +68,37 @@ locked to admin-only write via field-level access. Covered by
 
 `Files` and `Announcements` read access started as "any authenticated
 user" — a known gap, since fixed (see below), as was the §4 "media
-library access… unless granted per cohort" trainer exception (also
-below). No further documented gaps remain.
+library access… unless granted per cohort" trainer exception and the
+`create`-access ownership gap on ModuleNotes/Documents/Workplans/
+AlumniProfiles (both also below). No further documented gaps remain.
+
+### `create`-access ownership checks (ModuleNotes, Documents, Workplans, AlumniProfiles)
+
+`adminOrRoleOwnsField(role, field)` (`src/access/roles.ts`) returns a
+`Where` like `{ [field]: { equals: user.id } }` — correct for `read`/
+`update`/`delete`, since Payload merges that constraint into the
+operation's own query. `create` is different: Payload's `createOperation`
+only checks whether the resolved access result is truthy and never merges
+it into the submitted `data`
+(`node_modules/payload/dist/collections/operations/create.js`, via
+`executeAccess`). So a `Where`-returning `create` access function behaves
+exactly like returning `true` — it never actually validates that the
+submitted `data[field]` matches the caller. `ModuleNotes.access.create`,
+`Documents.access.create`, `Workplans.access.create`, and
+`AlumniProfiles.access.create` all had this shape, meaning e.g. a trainer
+could create a `ModuleNote` naming a *different* trainer, or an intern a
+`Document`/`AlumniProfile` under another intern's id.
+
+Fixed with `adminOrRoleOwnsFieldOnCreate(role, field)` (`src/access/
+roles.ts`), the `create`-safe counterpart: it checks `data?.[field] ===
+user.id` directly and returns a real boolean, which Payload does apply
+correctly for `create` (a boolean only needs to be checked for
+truthiness — no merge required). All four collections' `access.create`
+now use it instead. Every actual write path to these collections today
+goes through the admin UI or trusted server code, not attacker-controlled
+`create` calls specifying someone else's id, so this was a
+correctness/defense-in-depth fix rather than an exploited gap. Covered by
+`tests/int/createAccessOwnership.int.spec.ts`.
 
 ### Files & Announcements read scoping
 

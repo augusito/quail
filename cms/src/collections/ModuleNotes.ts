@@ -1,6 +1,6 @@
 import type { CollectionConfig } from 'payload'
 
-import { adminOrRoleOwnsField, isAdmin } from '../access/roles'
+import { adminOrRoleOwnsField, adminOrRoleOwnsFieldOnCreate, isAdmin } from '../access/roles'
 
 // §6.4 per-session deliverables: slide deck, prose write-up, the assignment
 // given to interns, and an end-of-module assessment report.
@@ -14,7 +14,7 @@ export const ModuleNotes: CollectionConfig = {
     defaultColumns: ['session', 'trainer'],
   },
   access: {
-    create: adminOrRoleOwnsField('trainer', 'trainer'),
+    create: adminOrRoleOwnsFieldOnCreate('trainer', 'trainer'),
     read: adminOrRoleOwnsField('trainer', 'trainer'),
     update: adminOrRoleOwnsField('trainer', 'trainer'),
     delete: isAdmin,
