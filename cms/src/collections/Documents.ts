@@ -1,6 +1,6 @@
 import type { CollectionConfig } from 'payload'
 
-import { adminOnlyField, adminOrRoleOwnsField, isAdmin } from '../access/roles'
+import { adminOnlyField, adminOrRoleOwnsField, adminOrRoleOwnsFieldOnCreate, isAdmin } from '../access/roles'
 
 // §6.7 Document Vault. Confirmed document types from the pitch deck; a
 // verification status (not just storage) lets admin track compliance.
@@ -13,7 +13,7 @@ export const Documents: CollectionConfig = {
     defaultColumns: ['intern', 'type', 'verificationStatus'],
   },
   access: {
-    create: adminOrRoleOwnsField('intern', 'intern'),
+    create: adminOrRoleOwnsFieldOnCreate('intern', 'intern'),
     read: adminOrRoleOwnsField('intern', 'intern'),
     // Interns can re-upload after a rejection, but can't self-verify —
     // verificationStatus/rejectionReason are locked to admin below.
