@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { getPayload } from 'payload'
+import type { Where } from 'payload'
 
 import config from '@/payload.config'
 import { PageShell } from '../components/PageShell'
@@ -9,17 +10,60 @@ import { PageShell } from '../components/PageShell'
 // visitor's own API request would see: opted-in AND graduated profiles
 // only (readAccess in src/collections/Alumna.ts), same as
 // everyone else — nothing here bypasses that.
-export default async function TalentBoardPage() {
+export default async function TalentBoardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string; status?: string }>
+}) {
+  const { q = '', status = '' } = await searchParams
   const payloadConfig = await config
   const payload = await getPayload({ config: payloadConfig })
 
-  const { docs: profiles } = await payload.find({
+  // Fetch the full public listing once to derive the set of employment
+  // statuses to offer as filter options, since they're free text and not
+  // a fixed enum on the Alumna collection.
+  const { docs: allProfiles } = await payload.find({
     collection: 'alumnae',
     depth: 1,
     limit: 100,
     overrideAccess: false,
     user: null,
   })
+  const statusOptions = Array.from(
+    new Set(allProfiles.map((profile) => profile.employmentStatus).filter((value): value is string => Boolean(value))),
+  ).sort((a, b) => a.localeCompare(b))
+
+  const trimmedQuery = q.trim()
+  const where: Where | undefined =
+    trimmedQuery || status
+      ? {
+          and: [
+            ...(trimmedQuery
+              ? [
+                  {
+                    or: [
+                      { name: { contains: trimmedQuery } },
+                      { bio: { contains: trimmedQuery } },
+                      { 'courses.name': { contains: trimmedQuery } },
+                    ],
+                  },
+                ]
+              : []),
+            ...(status ? [{ employmentStatus: { equals: status } }] : []),
+          ],
+        }
+      : undefined
+
+  const { docs: profiles } = where
+    ? await payload.find({
+        collection: 'alumnae',
+        depth: 1,
+        limit: 100,
+        overrideAccess: false,
+        user: null,
+        where,
+      })
+    : { docs: allProfiles }
 
   return (
     <PageShell>
@@ -38,8 +82,50 @@ export default async function TalentBoardPage() {
         rather than messaging them directly.
       </p>
 
+      <form className="mt-6 flex flex-wrap gap-3" action="/talent-board">
+        <input
+          type="search"
+          name="q"
+          defaultValue={q}
+          placeholder="Search by name, skills, or courses"
+          className="min-w-0 flex-1 rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+        />
+        {statusOptions.length > 0 && (
+          <select
+            name="status"
+            defaultValue={status}
+            className="rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+          >
+            <option value="">All employment statuses</option>
+            {statusOptions.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
+        )}
+        <button
+          type="submit"
+          className="rounded-md bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700"
+        >
+          Search
+        </button>
+        {(trimmedQuery || status) && (
+          <Link
+            href="/talent-board"
+            className="self-center text-sm text-slate-500 hover:text-brand-600"
+          >
+            Clear filters
+          </Link>
+        )}
+      </form>
+
       {profiles.length === 0 ? (
-        <p className="mt-8 text-slate-500">No graduates are listed yet.</p>
+        <p className="mt-8 text-slate-500">
+          {allProfiles.length === 0
+            ? 'No graduates are listed yet.'
+            : 'No graduates match your search.'}
+        </p>
       ) : (
         <div className="mt-8 grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-5">
           {profiles.map((profile) => {
