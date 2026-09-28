@@ -11,7 +11,6 @@ import { Announcements } from './collections/Announcements'
 import { Cohorts } from './collections/Cohorts'
 import { Contracts } from './collections/Contracts'
 import { Documents } from './collections/Documents'
-import { Education } from './collections/Education'
 import { Enrollments } from './collections/Enrollments'
 import { Evaluations } from './collections/Evaluations'
 import { Files } from './collections/Files'
@@ -64,7 +63,6 @@ export default buildConfig({
     Users,
     Trainer,
     Intern,
-    Education,
     Images,
     Files,
     Cohorts,

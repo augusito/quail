@@ -185,21 +185,3 @@ export async function getMediaGrantedCohortIds(payload: Payload, trainerId: ID):
   })
   return docs.map((doc) => doc.id as ID)
 }
-
-/**
- * §5 (proposal v2): `Education.intern` relates to the `interns` profile
- * collection, not directly to `users` — so an intern's own-record access
- * can't compare `data.intern` to `user.id` the way `adminOrRoleOwnsField`
- * does elsewhere. Resolves the current user's own `interns` row id (each
- * intern has exactly one, set once at self-registration, §6.2).
- */
-export async function getOwnInternProfileId(payload: Payload, userId: ID): Promise<ID | null> {
-  const { docs } = await payload.find({
-    collection: 'interns',
-    where: { user: { equals: userId } },
-    limit: 1,
-    depth: 0,
-    overrideAccess: true,
-  })
-  return docs[0]?.id ?? null
-}

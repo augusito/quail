@@ -70,7 +70,6 @@ export interface Config {
     users: User;
     trainers: Trainer;
     interns: Intern;
-    education: Education;
     images: Image;
     files: File;
     cohorts: Cohort;
@@ -99,7 +98,6 @@ export interface Config {
     users: UsersSelect<false> | UsersSelect<true>;
     trainers: TrainersSelect<false> | TrainersSelect<true>;
     interns: InternsSelect<false> | InternsSelect<true>;
-    education: EducationSelect<false> | EducationSelect<true>;
     images: ImagesSelect<false> | ImagesSelect<true>;
     files: FilesSelect<false> | FilesSelect<true>;
     cohorts: CohortsSelect<false> | CohortsSelect<true>;
@@ -267,20 +265,6 @@ export interface Intern {
     phone: string;
     email?: string | null;
   };
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "education".
- */
-export interface Education {
-  id: number;
-  intern: number | Intern;
-  school: string;
-  startDate?: string | null;
-  endDate?: string | null;
-  qualification: string;
   updatedAt: string;
   createdAt: string;
 }
@@ -767,10 +751,6 @@ export interface PayloadLockedDocument {
         value: number | Intern;
       } | null)
     | ({
-        relationTo: 'education';
-        value: number | Education;
-      } | null)
-    | ({
         relationTo: 'images';
         value: number | Image;
       } | null)
@@ -948,19 +928,6 @@ export interface InternsSelect<T extends boolean = true> {
         phone?: T;
         email?: T;
       };
-  updatedAt?: T;
-  createdAt?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "education_select".
- */
-export interface EducationSelect<T extends boolean = true> {
-  intern?: T;
-  school?: T;
-  startDate?: T;
-  endDate?: T;
-  qualification?: T;
   updatedAt?: T;
   createdAt?: T;
 }

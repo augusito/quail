@@ -18,7 +18,7 @@ describe('/api/register (§6.2 invite-link self-registration, proposal v2)', () 
   })
 
   afterAll(async () => {
-    for (const collection of ['enrollments', 'education', 'interns', 'trainers', 'contracts', 'users', 'invites', 'cohorts'] as const) {
+    for (const collection of ['enrollments', 'interns', 'trainers', 'contracts', 'users', 'invites', 'cohorts'] as const) {
       await payload.delete({ collection, where: {}, overrideAccess: true })
     }
   })
@@ -191,12 +191,12 @@ describe('/api/register (§6.2 invite-link self-registration, proposal v2)', () 
   })
 
   describe('intern registration', () => {
-    it('registers a new intern, creates their profile + education history, auto-enrolls them, and leaves them pending', async () => {
+    it('registers a new intern, creates their profile, auto-enrolls them, and leaves them pending', async () => {
       const { cohort, invite } = await createInvite('intern')
 
       const response = await callRegister({
         token: invite.token,
-        ...internBody({ education: [{ school: 'Nairobi Girls', qualification: 'KCSE', startDate: '2016-01-01', endDate: '2019-11-01' }] }),
+        ...internBody(),
       })
       expect(response.status).toBe(201)
       const body = await response.json()
@@ -222,14 +222,6 @@ describe('/api/register (§6.2 invite-link self-registration, proposal v2)', () 
         nssfNumber: 'NSSF123',
       })
       expect(internProfiles[0].nextOfKin).toMatchObject({ name: 'Next Kin', relationship: 'Sister', phone: '0711111111' })
-
-      const { docs: education } = await payload.find({
-        collection: 'education',
-        where: { intern: { equals: internProfiles[0].id } },
-        overrideAccess: true,
-      })
-      expect(education).toHaveLength(1)
-      expect(education[0]).toMatchObject({ school: 'Nairobi Girls', qualification: 'KCSE' })
 
       const enrollments = await payload.find({
         collection: 'enrollments',

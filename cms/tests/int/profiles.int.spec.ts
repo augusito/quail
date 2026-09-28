@@ -1,6 +1,5 @@
-// §5/§6.2 (proposal v2): Trainer and Intern profile collections, plus the
-// repeatable Education history that hangs off Intern. Access control
-// mirrors §4's "Register/manage own profile": admin sees/edits everything,
+// §5/§6.2 (proposal v2): Trainer and Intern profile collections. Access
+// control mirrors §4's "Register/manage own profile": admin sees/edits everything,
 // everyone else only their own row. `user` is unique on both collections
 // (one profile per account), so each seeded user's profile is created once
 // in beforeAll and reused read-only across tests, rather than re-created
@@ -29,7 +28,7 @@ let trainerProfileB: Trainer
 let internProfileA: Intern
 let internProfileB: Intern
 
-describe('Trainer / Intern / Education access control (§4, §5, §6.2)', () => {
+describe('Trainer / Intern access control (§4, §5, §6.2)', () => {
   beforeAll(async () => {
     const payloadConfig = await config
     payload = await getPayload({ config: payloadConfig })
@@ -114,7 +113,7 @@ describe('Trainer / Intern / Education access control (§4, §5, §6.2)', () => 
   })
 
   afterAll(async () => {
-    for (const collection of ['education', 'trainers', 'interns'] as const) {
+    for (const collection of ['trainers', 'interns'] as const) {
       await payload.delete({ collection, where: {}, overrideAccess: true })
     }
     await Promise.all(
@@ -234,41 +233,6 @@ describe('Trainer / Intern / Education access control (§4, §5, §6.2)', () => 
         })
         expect(found).toBeNull()
       }
-    })
-  })
-
-  describe('Education', () => {
-    it('an intern can create and read their own education rows, but not another intern\'s', async () => {
-      const ownEducation = await payload.create({
-        collection: 'education',
-        data: { intern: internProfileA.id, school: 'Own School', qualification: 'KCSE' },
-        overrideAccess: false,
-        user: seeded.internA,
-      })
-      expect(ownEducation.id).toBeDefined()
-
-      await expect(
-        payload.create({
-          collection: 'education',
-          data: { intern: internProfileB.id, school: 'Hijack School', qualification: 'KCSE' },
-          overrideAccess: false,
-          user: seeded.internA,
-        }),
-      ).rejects.toThrow()
-
-      const othersEducation = await payload.create({
-        collection: 'education',
-        data: { intern: internProfileB.id, school: 'Other School', qualification: 'Diploma' },
-        overrideAccess: true,
-      })
-      const cannotReadOthers = await payload.findByID({
-        collection: 'education',
-        id: othersEducation.id,
-        overrideAccess: false,
-        user: seeded.internA,
-        disableErrors: true,
-      })
-      expect(cannotReadOthers).toBeNull()
     })
   })
 
