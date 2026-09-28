@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import { getPayload } from 'payload'
 
 import config from '@/payload.config'
+import { PageShell } from '../../components/PageShell'
 
 // §6.9: public fields are photo, name, courses, work experience, and a
 // narrative bio; email/phone are shown only when the alum chose to
@@ -32,35 +33,29 @@ export default async function TalentBoardProfilePage({ params }: { params: Promi
   const adminContact = process.env.ADMIN_CONTACT_EMAIL || 'info@she-delivers.local'
 
   return (
-    <main
-      style={{
-        maxWidth: 640,
-        margin: '0 auto',
-        padding: '2rem 1rem',
-        fontFamily: 'sans-serif',
-        background: '#fff',
-        color: '#111',
-        minHeight: '100vh',
-      }}
-    >
-      <Link href="/talent-board">&larr; Back to Talent Board</Link>
+    <PageShell narrow>
+      <Link href="/talent-board" className="text-sm text-brand-600 hover:underline">
+        &larr; Back to Talent Board
+      </Link>
 
-      <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'flex-start', marginTop: '1.5rem' }}>
+      <div className="mt-6 flex items-start gap-6">
         {photo?.url ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={photo.url}
             alt={photo.alt || profile.name}
-            style={{ width: 140, height: 140, objectFit: 'cover', borderRadius: 8, flexShrink: 0 }}
+            className="h-35 w-35 shrink-0 rounded-lg object-cover"
           />
         ) : (
-          <div style={{ width: 140, height: 140, borderRadius: 8, background: '#f0f0f0', flexShrink: 0 }} />
+          <div className="h-35 w-35 shrink-0 rounded-lg bg-slate-100" />
         )}
         <div>
-          <h1 style={{ margin: 0 }}>{profile.name}</h1>
-          {profile.employmentStatus && <p style={{ color: '#555', margin: '0.25rem 0' }}>{profile.employmentStatus}</p>}
+          <h1 className="text-2xl font-bold text-slate-900">{profile.name}</h1>
+          {profile.employmentStatus && (
+            <p className="mt-1 text-slate-500">{profile.employmentStatus}</p>
+          )}
           {(profile.email || profile.phone) && (
-            <p style={{ color: '#555', fontSize: '0.9rem' }}>
+            <p className="mt-1 text-sm text-slate-500">
               {[profile.email, profile.phone].filter(Boolean).join(' · ')}
             </p>
           )}
@@ -68,16 +63,16 @@ export default async function TalentBoardProfilePage({ params }: { params: Promi
       </div>
 
       {profile.bio && (
-        <section style={{ marginTop: '1.5rem' }}>
-          <h2 style={{ fontSize: '1.1rem' }}>About</h2>
-          <p style={{ whiteSpace: 'pre-wrap' }}>{profile.bio}</p>
+        <section className="mt-6">
+          <h2 className="text-lg font-semibold text-slate-900">About</h2>
+          <p className="mt-1 whitespace-pre-wrap text-slate-700">{profile.bio}</p>
         </section>
       )}
 
       {profile.courses && profile.courses.length > 0 && (
-        <section style={{ marginTop: '1.5rem' }}>
-          <h2 style={{ fontSize: '1.1rem' }}>Courses & Certifications</h2>
-          <ul>
+        <section className="mt-6">
+          <h2 className="text-lg font-semibold text-slate-900">Courses & Certifications</h2>
+          <ul className="mt-1 list-inside list-disc text-slate-700">
             {profile.courses.map((course, i) => (
               <li key={i}>{course.name}</li>
             ))}
@@ -86,9 +81,9 @@ export default async function TalentBoardProfilePage({ params }: { params: Promi
       )}
 
       {profile.workExperience && profile.workExperience.length > 0 && (
-        <section style={{ marginTop: '1.5rem' }}>
-          <h2 style={{ fontSize: '1.1rem' }}>Work Experience</h2>
-          <ul>
+        <section className="mt-6">
+          <h2 className="text-lg font-semibold text-slate-900">Work Experience</h2>
+          <ul className="mt-1 list-inside list-disc text-slate-700">
             {profile.workExperience.map((entry, i) => (
               <li key={i}>{entry.description}</li>
             ))}
@@ -96,10 +91,13 @@ export default async function TalentBoardProfilePage({ params }: { params: Promi
         </section>
       )}
 
-      <p style={{ marginTop: '2rem', color: '#555', fontSize: '0.9rem' }}>
+      <p className="mt-8 text-sm text-slate-500">
         Interested in connecting with {profile.name}? This board is view-only —{' '}
-        <a href={`mailto:${adminContact}`}>contact us</a> and we&rsquo;ll act as the go-between.
+        <a href={`mailto:${adminContact}`} className="text-brand-600 hover:underline">
+          contact us
+        </a>{' '}
+        and we&rsquo;ll act as the go-between.
       </p>
-    </main>
+    </PageShell>
   )
 }
