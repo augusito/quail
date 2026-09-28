@@ -111,7 +111,7 @@ const lookupEndpoint: Endpoint = {
  * collection. A client posts the invite token plus their profile details;
  * this validates the invite (exists, not used/revoked/expired) and —
  * only then — creates the User plus the role-appropriate profile
- * (Intern + Education rows + Enrollment, or Trainer + a Draft Contract)
+ * (Intern + Enrollment, or Trainer + a Draft Contract)
  * on the registrant's behalf via `overrideAccess`.
  *
  * `role` and the account `email` always come from the invite record,
@@ -194,7 +194,7 @@ const submitEndpoint: Endpoint = {
     // the rest of this codebase), so on failure we best-effort delete
     // whatever we did manage to create, in reverse order, and leave the
     // invite untouched (still `sent`) so the same link can be retried.
-    const created: { collection: 'contracts' | 'education' | 'interns' | 'trainers' | 'enrollments'; id: number }[] = []
+    const created: { collection: 'contracts' | 'interns' | 'trainers' | 'enrollments'; id: number }[] = []
     try {
       if (invite.role === 'intern') {
         const intern = await req.payload.create({
@@ -223,23 +223,6 @@ const submitEndpoint: Endpoint = {
           overrideAccess: true,
         })
         created.push({ collection: 'interns', id: intern.id })
-
-        const education = Array.isArray(body.education) ? (body.education as Record<string, unknown>[]) : []
-        for (const entry of education) {
-          if (typeof entry.school !== 'string' || typeof entry.qualification !== 'string') continue
-          const row = await req.payload.create({
-            collection: 'education',
-            data: {
-              intern: intern.id,
-              school: entry.school,
-              qualification: entry.qualification,
-              startDate: typeof entry.startDate === 'string' ? entry.startDate : undefined,
-              endDate: typeof entry.endDate === 'string' ? entry.endDate : undefined,
-            },
-            overrideAccess: true,
-          })
-          created.push({ collection: 'education', id: row.id })
-        }
 
         const enrollment = await req.payload.create({
           collection: 'enrollments',

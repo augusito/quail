@@ -8,7 +8,6 @@ import { PageShell } from '../components/PageShell'
 type Status = 'idle' | 'submitting' | 'success' | 'error'
 type Role = 'intern' | 'trainer'
 type Invite = { cohortName?: string; email: string; role: Role; track: string | null }
-type Education = { endDate: string; qualification: string; school: string; startDate: string }
 
 const inputClass =
   'mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500'
@@ -48,7 +47,6 @@ export default function RegisterPage() {
   const [nextOfKinAddress, setNextOfKinAddress] = useState('')
   const [nextOfKinPhone, setNextOfKinPhone] = useState('')
   const [nextOfKinEmail, setNextOfKinEmail] = useState('')
-  const [education, setEducation] = useState<Education[]>([])
 
   const [status, setStatus] = useState<Status>('idle')
   const [message, setMessage] = useState('')
@@ -66,18 +64,6 @@ export default function RegisterPage() {
       })
       .catch(() => setLookupError('Could not reach the server. Please try again.'))
   }, [token])
-
-  function addEducationRow() {
-    setEducation((rows) => [...rows, { school: '', startDate: '', endDate: '', qualification: '' }])
-  }
-
-  function updateEducationRow(index: number, field: keyof Education, value: string) {
-    setEducation((rows) => rows.map((row, i) => (i === index ? { ...row, [field]: value } : row)))
-  }
-
-  function removeEducationRow(index: number) {
-    setEducation((rows) => rows.filter((_, i) => i !== index))
-  }
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault()
@@ -107,7 +93,6 @@ export default function RegisterPage() {
               phone: nextOfKinPhone,
               email: nextOfKinEmail,
             },
-            education: education.filter((row) => row.school && row.qualification),
           }
         : { token, password, name, occupation, address, phone, nationalIdNumber, kraPin }
 
@@ -365,58 +350,6 @@ export default function RegisterPage() {
                     className={inputClass}
                   />
                 </label>
-              </div>
-            </fieldset>
-
-            <fieldset className="rounded-lg border border-slate-200 p-4">
-              <legend className="px-1 text-sm font-medium text-slate-700">Education (optional)</legend>
-              <div className={fieldsetClass}>
-                {education.map((row, index) => (
-                  <div key={index} className={`${fieldsetClass} border-b border-slate-100 pb-3`}>
-                    <input
-                      type="text"
-                      placeholder="School"
-                      value={row.school}
-                      onChange={(e) => updateEducationRow(index, 'school', e.target.value)}
-                      className={inputClass}
-                    />
-                    <input
-                      type="text"
-                      placeholder="Qualification"
-                      value={row.qualification}
-                      onChange={(e) => updateEducationRow(index, 'qualification', e.target.value)}
-                      className={inputClass}
-                    />
-                    <div className="flex gap-2">
-                      <input
-                        type="date"
-                        value={row.startDate}
-                        onChange={(e) => updateEducationRow(index, 'startDate', e.target.value)}
-                        className={inputClass}
-                      />
-                      <input
-                        type="date"
-                        value={row.endDate}
-                        onChange={(e) => updateEducationRow(index, 'endDate', e.target.value)}
-                        className={inputClass}
-                      />
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => removeEducationRow(index)}
-                      className="self-start text-sm text-slate-500 hover:text-red-600"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                ))}
-                <button
-                  type="button"
-                  onClick={addEducationRow}
-                  className="self-start text-sm font-medium text-brand-600 hover:text-brand-700"
-                >
-                  Add education
-                </button>
               </div>
             </fieldset>
           </>

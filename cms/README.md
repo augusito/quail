@@ -43,7 +43,6 @@ Mapped from the proposal's data model (§5):
 | --- | --- |
 | `users` | §4 roles: admin / trainer / intern / supervisor — auth/role anchor for every role |
 | `trainers`, `interns` | §5, §6.2 — richer profile data collected at self-registration, additive 1:1 extensions of `users` (see Access control below) |
-| `education` | §5, §6.2 — an intern's repeatable qualification history, linked to `interns` |
 | `cohorts` | §6.1 |
 | `enrollments` | §6.1 |
 | `invites` | §6.2 — dual-role (intern/trainer), email-personalized, single-use |
@@ -104,10 +103,10 @@ goes through the admin UI or trusted server code, not attacker-controlled
 correctness/defense-in-depth fix rather than an exploited gap. Covered by
 `tests/int/createAccessOwnership.int.spec.ts`.
 
-### Trainer / Intern / Education profiles (§5, §6.2, §7)
+### Trainer / Intern profiles (§5, §6.2, §7)
 
 Proposal v2 splits the richer registration-time profile data (personal,
-contact, statutory numbers, next of kin, education history) out of
+contact, statutory numbers, next of kin) out of
 `Users` into two new collections, `Trainer` (`src/collections/Trainer.ts`)
 and `Intern` (`src/collections/Intern.ts`), each a `user` relationship
 back to a `users` row (unique — one profile per account) rather than a
@@ -115,13 +114,22 @@ replacement for it. Every existing collection that references "trainer"
 or "intern" (Contracts, Sessions, Documents, Scores, ...) keeps relating
 to `users` directly, exactly as before — `Trainer`/`Intern` are additive,
 not a foundational schema change to how the rest of the app models
-people. `Education` (`src/collections/Education.ts`) is a third,
-separate collection for an intern's repeatable qualification history,
-relating to `Intern` (not `users`) since it's specifically part of that
-richer profile.
+people.
+
+> **Education history removed (for now).** §5 originally called for a
+> separate `Education` collection (school, dates, qualification,
+> repeatable per intern), relating to `Intern`. It shipped, then was
+> pulled back out at the requester's ask to drop it from the intern
+> profile for the time being. It's still in git history (see the commit
+> removing `src/collections/Education.ts`) if it needs to come back —
+> re-adding it means re-registering the collection in
+> `payload.config.ts`, restoring the `education` rows in the register
+> endpoint/form, and restoring `getOwnInternProfileId` in
+> `src/access/scoping.ts`, which existed only to support its access
+> control.
 
 Access: admin sees/edits every row; everyone else only their own (via
-`user` on Trainer/Intern, or the owning `Intern` row on Education) — §4's
+`user` on Trainer/Intern) — §4's
 "Register/manage own profile". Building this surfaced a real Payload
 quirk: `create` access functions that return a `Where` constraint (the
 `adminOrRoleOwnsField` helper, used throughout this codebase, e.g. on
@@ -131,13 +139,13 @@ is truthy (confirmed by reading
 `node_modules/payload/dist/collections/operations/create.js`:
 `executeAccess`'s resolved constraint is awaited and discarded for
 `create`, unlike `read`/`update`/`delete` where it's merged into the
-query). A test asserting an intern couldn't create an Education row
-under someone else's profile caught this: the naive
+query). A test asserting an intern couldn't create a profile row
+under someone else's account caught this: the naive
 `adminOrRoleOwnsField`-style `create` access would have let them. Fixed
 with a new `adminOrRoleOwnsFieldOnCreate` (`src/access/roles.ts`, with
 the mechanism documented in its own comment) that explicitly checks
 `data.<field>` against the caller's id, used for `Trainer`/`Intern`'s own
-`create` access and inlined the same way for `Education`'s. (The
+`create` access. (The
 pre-existing collections using the unsafe pattern for `create` —
 `Note`, `Documents`, `Workplans`, `Alumna` — predate this revision and
 are unaffected by it in practice today, since every real write path to
@@ -319,8 +327,8 @@ Two routes at the same path, both public and unauthenticated:
   the role-appropriate records on the registrant's behalf via
   `overrideAccess` (all otherwise admin-only):
   - **intern** → an `Intern` profile row (name, DOB, gender, nationality,
-    contact, statutory numbers, next of kin) + zero or more `Education`
-    rows + an `Enrollment` in the invite's cohort/track, same as v1.
+    contact, statutory numbers, next of kin) + an `Enrollment` in the
+    invite's cohort/track, same as v1.
   - **trainer** → a `Trainer` profile row (name, occupation, contact,
     statutory numbers) + a **Draft** `Contract` for the invite's cohort —
     the concrete form "trainers are associated with that cohort ahead of
@@ -331,7 +339,7 @@ Two routes at the same path, both public and unauthenticated:
   If any step after the User is created throws (e.g. a `gender`/`track`
   value that passes the endpoint's own presence check but not the
   target collection's own field validation), everything created so far
-  — the profile row, any Education rows, the Enrollment/Contract — is
+  — the profile row, the Enrollment/Contract — is
   deleted in reverse order and the User itself is deleted too, rather
   than left as an orphan on an otherwise-still-`sent` invite. There's no
   shared DB transaction across these `create` calls (consistent with the
@@ -369,8 +377,7 @@ register → blocked login → admin sets `status: active` → login succeeds.
 
 The logged link points at `/register?token=...` — a minimal client-side
 form that fetches the `GET` lookup on mount, then renders the
-role-appropriate field set (including a repeatable "add education" list
-for interns) and posts to `POST` above — functional, not styled; the
+role-appropriate field set and posts to `POST` above — functional, not styled; the
 polished public site is still future work.
 
 `POST /api/register` (and the `GET` lookup, separately) is rate-limited
@@ -522,8 +529,9 @@ Board (§6.9), the per-cohort media-access grant for trainers under
 Access Control above, and rate-limiting on `POST /api/register` under
 Invite-link registration.
 
-Also built: the full proposal v2 revision — `Trainer`/`Intern`/`Education`
-profile collections and §7's sensitive-field export exclusion (Access
+Also built: the full proposal v2 revision — `Trainer`/`Intern`
+profile collections (see the Education-history note under Access control
+above) and §7's sensitive-field export exclusion (Access
 control above), dual-role email-personalized single-use invites and the
 Draft-contract trainer association (Invite-link registration above), the
 `Session`/`Note`/`Logbook`/`Media`/`Alumna` renames and the

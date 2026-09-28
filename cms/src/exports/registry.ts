@@ -34,7 +34,7 @@ import { displayName, formatBoolean, formatDate, joinValues } from './format'
 // collection in the app — group/array-heavy or upload-only collections
 // (Logbook's driver/non-driver nested groups aside, which do get a
 // flattened column set below) and internal ones (Files, Invites,
-// Education, payload-jobs) aren't meaningful as a flat spreadsheet row.
+// payload-jobs) aren't meaningful as a flat spreadsheet row.
 export type ExportDefinition<T> = {
   columns: ExportColumn<T>[]
   label: string
