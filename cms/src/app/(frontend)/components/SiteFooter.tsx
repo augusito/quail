@@ -10,6 +10,9 @@ export function SiteFooter() {
             {adminContact}
           </a>
         </p>
+        <p className="mt-1 text-xs tracking-wide text-slate-400 uppercase">
+          A Pontypridd Holdings Initiative
+        </p>
       </div>
     </footer>
   )
