@@ -58,6 +58,10 @@ export default buildConfig({
     importMap: {
       baseDir: path.resolve(dirname),
     },
+    meta: {
+      icons: [{ url: '/favicon.ico' }],
+      titleSuffix: ' - She Delivers',
+    },
   },
   collections: [
     Users,

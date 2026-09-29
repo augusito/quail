@@ -1,14 +1,34 @@
 @import 'tailwindcss';
 
 @theme {
-  --color-brand-50: #fff7ed;
-  --color-brand-100: #ffedd5;
-  --color-brand-200: #fed7aa;
-  --color-brand-500: #f97316;
-  --color-brand-600: #ea580c;
-  --color-brand-700: #c2410c;
+  /* She Delivers brand mauve, sampled from the logo */
+  --color-brand-50: #f6f3f6;
+  --color-brand-100: #ede8ec;
+  --color-brand-200: #daced8;
+  --color-brand-300: #bfabbc;
+  --color-brand-400: #a78ba2;
+  --color-brand-500: #977591;
+  --color-brand-600: #7c5d76;
+  --color-brand-700: #5f475b;
+  --color-brand-800: #473644;
+  --color-brand-900: #332631;
+
+  /* She Delivers brand orange, sampled from the logo */
+  --color-accent-50: #fef4ec;
+  --color-accent-100: #fde9d8;
+  --color-accent-200: #fbd0ac;
+  --color-accent-300: #f8ae72;
+  --color-accent-400: #f6903c;
+  --color-accent-500: #f5882f;
+  --color-accent-600: #e66d0b;
+  --color-accent-700: #b55609;
+  --color-accent-800: #8e4407;
+  --color-accent-900: #6c3405;
+
+  --font-sans: var(--font-geo), 'Century Gothic', sans-serif;
 }
 
 body {
   @apply bg-white text-slate-900 antialiased;
+  font-family: var(--font-sans);
 }
