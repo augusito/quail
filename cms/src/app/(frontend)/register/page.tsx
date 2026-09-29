@@ -34,11 +34,9 @@ const TRAINER_PROFILE_FIELDS: Field[] = [
   { key: 'occupation', label: 'Occupation', type: 'text', required: true },
   { key: 'phone', label: 'Phone', type: 'tel', required: true },
   { key: 'address', label: 'Address', type: 'text', required: false },
-  { key: 'nationalIdNumber', label: 'National ID / passport number', type: 'text', required: true },
-  { key: 'kraPin', label: 'KRA PIN', type: 'text', required: true },
 ]
 
-const INTERN_PROFILE_FIELDS: Field[] = [
+const INTERN_PERSONAL_FIELDS: Field[] = [
   { key: 'dateOfBirth', label: 'Date of birth', type: 'date', required: true },
   {
     key: 'gender',
@@ -54,11 +52,17 @@ const INTERN_PROFILE_FIELDS: Field[] = [
   { key: 'nationality', label: 'Nationality', type: 'text', required: true },
   { key: 'phone', label: 'Phone', type: 'tel', required: true },
   { key: 'address', label: 'Address', type: 'text', required: false },
+]
+
+// National ID and KRA PIN apply to both roles; SHIF/NSSF only exist on the
+// Intern profile (src/collections/Interns.ts) — trainers have no equivalent.
+const TRAINER_IDENTIFICATION_FIELDS: Field[] = [
   { key: 'nationalIdNumber', label: 'National ID / passport number', type: 'text', required: true },
   { key: 'kraPin', label: 'KRA PIN', type: 'text', required: true },
 ]
 
-const INTERN_STATUTORY_FIELDS: Field[] = [
+const INTERN_IDENTIFICATION_FIELDS: Field[] = [
+  ...TRAINER_IDENTIFICATION_FIELDS,
   { key: 'shifNumber', label: 'SHIF number', type: 'text', required: true },
   { key: 'nssfNumber', label: 'NSSF number', type: 'text', required: true },
 ]
@@ -78,12 +82,14 @@ function stepsForRole(role: Role): StepDef[] {
     return [
       { title: 'Account', fields: ACCOUNT_FIELDS },
       { title: 'Profile', fields: TRAINER_PROFILE_FIELDS },
+      { title: 'Identification', fields: TRAINER_IDENTIFICATION_FIELDS },
     ]
   }
   return [
     { title: 'Account', fields: ACCOUNT_FIELDS },
-    { title: 'Profile', fields: INTERN_PROFILE_FIELDS },
-    { title: 'Statutory & next of kin', fields: [...INTERN_STATUTORY_FIELDS, ...NEXT_OF_KIN_FIELDS] },
+    { title: 'Personal details', fields: INTERN_PERSONAL_FIELDS },
+    { title: 'Identification', fields: INTERN_IDENTIFICATION_FIELDS },
+    { title: 'Next of kin', fields: NEXT_OF_KIN_FIELDS },
   ]
 }
 
