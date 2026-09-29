@@ -1,7 +1,7 @@
 'use client'
 
 import { useSearchParams } from 'next/navigation'
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 
 import { PageShell } from '../components/PageShell'
 
@@ -11,16 +11,98 @@ type Invite = { cohortName?: string; email: string; role: Role; track: string | 
 
 const inputClass =
   'mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500'
+const errorInputClass = 'border-red-400 focus:border-red-500 focus:ring-red-500'
 const labelClass = 'block text-sm font-medium text-slate-700'
+const errorTextClass = 'mt-1 text-sm text-red-600'
 const fieldsetClass = 'flex flex-col gap-4'
 
-// §6.2 self-registration form (proposal v2). Reads the invite token from
-// the URL (?token=... — the link logged by src/collections/Invites.ts),
-// looks up the invite's role/email/cohort via GET /api/register?token=...
-// (so it knows which field set to render before the person types
-// anything), then posts the role-specific profile fields to
-// POST /api/register (src/endpoints/register.ts), which does the real
-// validation.
+type Field = {
+  key: string
+  label: string
+  type: 'text' | 'password' | 'tel' | 'email' | 'date' | 'select'
+  required: boolean
+  options?: { value: string; label: string }[]
+  minLength?: number
+}
+
+const ACCOUNT_FIELDS: Field[] = [
+  { key: 'name', label: 'Full name', type: 'text', required: true },
+  { key: 'password', label: 'Password', type: 'password', required: true, minLength: 8 },
+]
+
+const TRAINER_PROFILE_FIELDS: Field[] = [
+  { key: 'occupation', label: 'Occupation', type: 'text', required: true },
+  { key: 'phone', label: 'Phone', type: 'tel', required: true },
+  { key: 'address', label: 'Address', type: 'text', required: false },
+  { key: 'nationalIdNumber', label: 'National ID / passport number', type: 'text', required: true },
+  { key: 'kraPin', label: 'KRA PIN', type: 'text', required: true },
+]
+
+const INTERN_PROFILE_FIELDS: Field[] = [
+  { key: 'dateOfBirth', label: 'Date of birth', type: 'date', required: true },
+  {
+    key: 'gender',
+    label: 'Gender',
+    type: 'select',
+    required: true,
+    options: [
+      { value: 'female', label: 'Female' },
+      { value: 'male', label: 'Male' },
+      { value: 'other', label: 'Other' },
+    ],
+  },
+  { key: 'nationality', label: 'Nationality', type: 'text', required: true },
+  { key: 'phone', label: 'Phone', type: 'tel', required: true },
+  { key: 'address', label: 'Address', type: 'text', required: false },
+  { key: 'nationalIdNumber', label: 'National ID / passport number', type: 'text', required: true },
+  { key: 'kraPin', label: 'KRA PIN', type: 'text', required: true },
+]
+
+const INTERN_STATUTORY_FIELDS: Field[] = [
+  { key: 'shifNumber', label: 'SHIF number', type: 'text', required: true },
+  { key: 'nssfNumber', label: 'NSSF number', type: 'text', required: true },
+]
+
+const NEXT_OF_KIN_FIELDS: Field[] = [
+  { key: 'nextOfKinName', label: 'Name', type: 'text', required: true },
+  { key: 'nextOfKinRelationship', label: 'Relationship', type: 'text', required: true },
+  { key: 'nextOfKinPhone', label: 'Phone', type: 'tel', required: true },
+  { key: 'nextOfKinAddress', label: 'Address', type: 'text', required: false },
+  { key: 'nextOfKinEmail', label: 'Email', type: 'email', required: false },
+]
+
+type StepDef = { title: string; fields: Field[] }
+
+function stepsForRole(role: Role): StepDef[] {
+  if (role === 'trainer') {
+    return [
+      { title: 'Account', fields: ACCOUNT_FIELDS },
+      { title: 'Profile', fields: TRAINER_PROFILE_FIELDS },
+    ]
+  }
+  return [
+    { title: 'Account', fields: ACCOUNT_FIELDS },
+    { title: 'Profile', fields: INTERN_PROFILE_FIELDS },
+    { title: 'Statutory & next of kin', fields: [...INTERN_STATUTORY_FIELDS, ...NEXT_OF_KIN_FIELDS] },
+  ]
+}
+
+function fieldError(field: Field, value: string): string | null {
+  if (field.required && value.trim() === '') return 'This field is required.'
+  if (field.minLength && value.length > 0 && value.length < field.minLength) {
+    return `Must be at least ${field.minLength} characters.`
+  }
+  return null
+}
+
+// §6.2 self-registration form (proposal v2), as a multi-step wizard. Reads
+// the invite token from the URL (?token=... — the link logged by
+// src/collections/Invites.ts), looks up the invite's role/email/cohort via
+// GET /api/register?token=... (so it knows which field set to render before
+// the person types anything), then posts the role-specific profile fields
+// to POST /api/register (src/endpoints/register.ts), which does the real
+// validation. The wizard's own per-step checks are a UX convenience only —
+// the server-side checks remain the source of truth.
 export default function RegisterPage() {
   const searchParams = useSearchParams()
   const token = searchParams.get('token') ?? ''
@@ -28,25 +110,9 @@ export default function RegisterPage() {
   const [invite, setInvite] = useState<Invite | null>(null)
   const [lookupError, setLookupError] = useState('')
 
-  const [name, setName] = useState('')
-  const [password, setPassword] = useState('')
-  const [phone, setPhone] = useState('')
-  const [address, setAddress] = useState('')
-  const [nationalIdNumber, setNationalIdNumber] = useState('')
-  const [kraPin, setKraPin] = useState('')
-  // Trainer-only
-  const [occupation, setOccupation] = useState('')
-  // Intern-only
-  const [dateOfBirth, setDateOfBirth] = useState('')
-  const [gender, setGender] = useState('')
-  const [nationality, setNationality] = useState('')
-  const [shifNumber, setShifNumber] = useState('')
-  const [nssfNumber, setNssfNumber] = useState('')
-  const [nextOfKinName, setNextOfKinName] = useState('')
-  const [nextOfKinRelationship, setNextOfKinRelationship] = useState('')
-  const [nextOfKinAddress, setNextOfKinAddress] = useState('')
-  const [nextOfKinPhone, setNextOfKinPhone] = useState('')
-  const [nextOfKinEmail, setNextOfKinEmail] = useState('')
+  const [values, setValues] = useState<Record<string, string>>({})
+  const [touched, setTouched] = useState<Record<string, boolean>>({})
+  const [stepIndex, setStepIndex] = useState(0)
 
   const [status, setStatus] = useState<Status>('idle')
   const [message, setMessage] = useState('')
@@ -65,8 +131,49 @@ export default function RegisterPage() {
       .catch(() => setLookupError('Could not reach the server. Please try again.'))
   }, [token])
 
-  async function handleSubmit(event: React.FormEvent) {
-    event.preventDefault()
+  const steps = useMemo(() => (invite ? stepsForRole(invite.role) : []), [invite])
+  const reviewStepIndex = steps.length
+
+  function setValue(key: string, value: string) {
+    setValues((current) => ({ ...current, [key]: value }))
+  }
+
+  function errorsForStep(step: StepDef): Record<string, string> {
+    const errors: Record<string, string> = {}
+    for (const field of step.fields) {
+      const error = fieldError(field, values[field.key] ?? '')
+      if (error) errors[field.key] = error
+    }
+    return errors
+  }
+
+  function goNext() {
+    const step = steps[stepIndex]
+    if (!step) return
+    const errors = errorsForStep(step)
+    if (Object.keys(errors).length > 0) {
+      setTouched((current) => ({
+        ...current,
+        ...Object.fromEntries(step.fields.map((field) => [field.key, true])),
+      }))
+      return
+    }
+    setStepIndex((index) => Math.min(index + 1, reviewStepIndex))
+  }
+
+  function goBack() {
+    setStepIndex((index) => Math.max(index - 1, 0))
+  }
+
+  // Reached via the review step's Submit button, or the Enter key while
+  // already on review — never from an earlier step (handleSubmit below
+  // routes those to goNext instead). Keeping the submit button's `type`
+  // fixed at "button" (see the Next/Submit button further down) avoids a
+  // React/DOM gotcha: toggling a <button>'s `type` between "button" and
+  // "submit" at the same position lets the browser's native click handling
+  // observe the *new* type before this component's own click handler has
+  // had a say, silently submitting the form a step early.
+  async function submitRegistration() {
     if (!invite) return
     setStatus('submitting')
     setMessage('')
@@ -75,26 +182,35 @@ export default function RegisterPage() {
       invite.role === 'intern'
         ? {
             token,
-            password,
-            name,
-            dateOfBirth,
-            gender,
-            nationality,
-            address,
-            phone,
-            nationalIdNumber,
-            kraPin,
-            shifNumber,
-            nssfNumber,
+            password: values.password,
+            name: values.name,
+            dateOfBirth: values.dateOfBirth,
+            gender: values.gender,
+            nationality: values.nationality,
+            address: values.address,
+            phone: values.phone,
+            nationalIdNumber: values.nationalIdNumber,
+            kraPin: values.kraPin,
+            shifNumber: values.shifNumber,
+            nssfNumber: values.nssfNumber,
             nextOfKin: {
-              name: nextOfKinName,
-              relationship: nextOfKinRelationship,
-              address: nextOfKinAddress,
-              phone: nextOfKinPhone,
-              email: nextOfKinEmail,
+              name: values.nextOfKinName,
+              relationship: values.nextOfKinRelationship,
+              address: values.nextOfKinAddress,
+              phone: values.nextOfKinPhone,
+              email: values.nextOfKinEmail,
             },
           }
-        : { token, password, name, occupation, address, phone, nationalIdNumber, kraPin }
+        : {
+            token,
+            password: values.password,
+            name: values.name,
+            occupation: values.occupation,
+            address: values.address,
+            phone: values.phone,
+            nationalIdNumber: values.nationalIdNumber,
+            kraPin: values.kraPin,
+          }
 
     try {
       const response = await fetch('/api/register', {
@@ -116,6 +232,18 @@ export default function RegisterPage() {
       setStatus('error')
       setMessage('Could not reach the server. Please try again.')
     }
+  }
+
+  // The Enter key still submits the <form> natively regardless of which
+  // step is showing, so this is the only path Enter can take: advance like
+  // Next on an earlier step, or submit for real once on review.
+  function handleSubmit(event: React.FormEvent) {
+    event.preventDefault()
+    if (stepIndex !== reviewStepIndex) {
+      goNext()
+      return
+    }
+    void submitRegistration()
   }
 
   const shell = (children: React.ReactNode) => <PageShell narrow>{children}</PageShell>
@@ -153,6 +281,61 @@ export default function RegisterPage() {
     return shell(<p className="text-slate-600">Loading invite…</p>)
   }
 
+  const onReview = stepIndex === reviewStepIndex
+  const currentStep = steps[stepIndex]
+
+  function renderField(field: Field) {
+    const value = values[field.key] ?? ''
+    const error = touched[field.key] ? fieldError(field, value) : null
+    const sharedProps = {
+      id: field.key,
+      required: field.required,
+      value,
+      onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setValue(field.key, e.target.value),
+      onBlur: () => setTouched((current) => ({ ...current, [field.key]: true })),
+      className: `${inputClass} ${error ? errorInputClass : ''}`,
+      'aria-invalid': error ? true : undefined,
+      'aria-describedby': error ? `${field.key}-error` : undefined,
+    }
+
+    return (
+      <div key={field.key}>
+        <label className={labelClass} htmlFor={field.key}>
+          {field.label}
+          {field.type === 'select' ? (
+            <select {...sharedProps}>
+              <option value="">Select…</option>
+              {field.options?.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <input
+              type={field.type}
+              minLength={field.minLength}
+              {...sharedProps}
+            />
+          )}
+        </label>
+        {error && (
+          <p id={`${field.key}-error`} className={errorTextClass}>
+            {error}
+          </p>
+        )}
+      </div>
+    )
+  }
+
+  function fieldDisplayValue(field: Field): string {
+    const value = values[field.key] ?? ''
+    if (!value) return '—'
+    if (field.type === 'password') return '•'.repeat(Math.min(value.length, 10))
+    if (field.type === 'select') return field.options?.find((option) => option.value === value)?.label ?? value
+    return value
+  }
+
   return shell(
     <>
       <h1 className="text-2xl font-bold text-slate-900">
@@ -163,205 +346,80 @@ export default function RegisterPage() {
         {invite.cohortName ? ` · ${invite.cohortName}` : ''}
         {invite.track ? ` · ${invite.track}` : ''}
       </p>
-      <form onSubmit={handleSubmit} className={`${fieldsetClass} mt-6`}>
-        <label className={labelClass}>
-          Full name
-          <input
-            type="text"
-            required
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className={inputClass}
-          />
-        </label>
-        <label className={labelClass}>
-          Password
-          <input
-            type="password"
-            required
-            minLength={8}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className={inputClass}
-          />
-        </label>
 
-        {invite.role === 'trainer' ? (
-          <label className={labelClass}>
-            Occupation
-            <input
-              type="text"
-              required
-              value={occupation}
-              onChange={(e) => setOccupation(e.target.value)}
-              className={inputClass}
-            />
-          </label>
-        ) : (
-          <>
-            <label className={labelClass}>
-              Date of birth
-              <input
-                type="date"
-                required
-                value={dateOfBirth}
-                onChange={(e) => setDateOfBirth(e.target.value)}
-                className={inputClass}
-              />
-            </label>
-            <label className={labelClass}>
-              Gender
-              <select
-                required
-                value={gender}
-                onChange={(e) => setGender(e.target.value)}
-                className={inputClass}
+      <ol className="mt-6 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm" aria-label="Registration steps">
+        {[...steps.map((step) => step.title), 'Review'].map((title, index) => {
+          const isCurrent = index === stepIndex
+          const isDone = index < stepIndex
+          return (
+            <li key={title} className="flex items-center gap-2">
+              {index > 0 && <span className="text-slate-300">›</span>}
+              <span
+                className={
+                  isCurrent
+                    ? 'font-semibold text-brand-700'
+                    : isDone
+                      ? 'text-slate-500'
+                      : 'text-slate-400'
+                }
               >
-                <option value="">Select…</option>
-                <option value="female">Female</option>
-                <option value="male">Male</option>
-                <option value="other">Other</option>
-              </select>
-            </label>
-            <label className={labelClass}>
-              Nationality
-              <input
-                type="text"
-                required
-                value={nationality}
-                onChange={(e) => setNationality(e.target.value)}
-                className={inputClass}
-              />
-            </label>
-          </>
-        )}
+                {index + 1}. {title}
+              </span>
+            </li>
+          )
+        })}
+      </ol>
 
-        <label className={labelClass}>
-          Address
-          <input
-            type="text"
-            value={address}
-            onChange={(e) => setAddress(e.target.value)}
-            className={inputClass}
-          />
-        </label>
-        <label className={labelClass}>
-          Phone
-          <input
-            type="tel"
-            required
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            className={inputClass}
-          />
-        </label>
-        <label className={labelClass}>
-          National ID / passport number
-          <input
-            type="text"
-            required
-            value={nationalIdNumber}
-            onChange={(e) => setNationalIdNumber(e.target.value)}
-            className={inputClass}
-          />
-        </label>
-        <label className={labelClass}>
-          KRA PIN
-          <input
-            type="text"
-            required
-            value={kraPin}
-            onChange={(e) => setKraPin(e.target.value)}
-            className={inputClass}
-          />
-        </label>
+      <form onSubmit={handleSubmit} className={`${fieldsetClass} mt-6`}>
+        {!onReview && currentStep && <div className={fieldsetClass}>{currentStep.fields.map(renderField)}</div>}
 
-        {invite.role === 'intern' && (
-          <>
-            <label className={labelClass}>
-              SHIF number
-              <input
-                type="text"
-                required
-                value={shifNumber}
-                onChange={(e) => setShifNumber(e.target.value)}
-                className={inputClass}
-              />
-            </label>
-            <label className={labelClass}>
-              NSSF number
-              <input
-                type="text"
-                required
-                value={nssfNumber}
-                onChange={(e) => setNssfNumber(e.target.value)}
-                className={inputClass}
-              />
-            </label>
-
-            <fieldset className="rounded-lg border border-slate-200 p-4">
-              <legend className="px-1 text-sm font-medium text-slate-700">Next of kin</legend>
-              <div className={fieldsetClass}>
-                <label className={labelClass}>
-                  Name
-                  <input
-                    type="text"
-                    required
-                    value={nextOfKinName}
-                    onChange={(e) => setNextOfKinName(e.target.value)}
-                    className={inputClass}
-                  />
-                </label>
-                <label className={labelClass}>
-                  Relationship
-                  <input
-                    type="text"
-                    required
-                    value={nextOfKinRelationship}
-                    onChange={(e) => setNextOfKinRelationship(e.target.value)}
-                    className={inputClass}
-                  />
-                </label>
-                <label className={labelClass}>
-                  Phone
-                  <input
-                    type="tel"
-                    required
-                    value={nextOfKinPhone}
-                    onChange={(e) => setNextOfKinPhone(e.target.value)}
-                    className={inputClass}
-                  />
-                </label>
-                <label className={labelClass}>
-                  Address
-                  <input
-                    type="text"
-                    value={nextOfKinAddress}
-                    onChange={(e) => setNextOfKinAddress(e.target.value)}
-                    className={inputClass}
-                  />
-                </label>
-                <label className={labelClass}>
-                  Email
-                  <input
-                    type="email"
-                    value={nextOfKinEmail}
-                    onChange={(e) => setNextOfKinEmail(e.target.value)}
-                    className={inputClass}
-                  />
-                </label>
+        {onReview && (
+          <div className={fieldsetClass}>
+            <p className="text-sm text-slate-600">Check your details before submitting.</p>
+            {steps.map((step) => (
+              <div key={step.title} className="rounded-lg border border-slate-200 p-4">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-sm font-semibold text-slate-700">{step.title}</h2>
+                  <button
+                    type="button"
+                    onClick={() => setStepIndex(steps.indexOf(step))}
+                    className="text-sm font-medium text-brand-600 hover:text-brand-700"
+                  >
+                    Edit
+                  </button>
+                </div>
+                <dl className="mt-2 grid grid-cols-1 gap-x-4 gap-y-1 sm:grid-cols-2">
+                  {step.fields.map((field) => (
+                    <div key={field.key} className="flex justify-between gap-2 sm:block">
+                      <dt className="text-xs uppercase tracking-wide text-slate-400">{field.label}</dt>
+                      <dd className="text-sm text-slate-700">{fieldDisplayValue(field)}</dd>
+                    </div>
+                  ))}
+                </dl>
               </div>
-            </fieldset>
-          </>
+            ))}
+          </div>
         )}
 
-        <button
-          type="submit"
-          disabled={status === 'submitting'}
-          className="mt-2 rounded-md bg-brand-600 px-4 py-2 font-medium text-white hover:bg-brand-700 disabled:opacity-60"
-        >
-          {status === 'submitting' ? 'Submitting…' : 'Register'}
-        </button>
+        <div className="mt-2 flex items-center justify-between gap-3">
+          <button
+            type="button"
+            onClick={goBack}
+            disabled={stepIndex === 0 || status === 'submitting'}
+            className="rounded-md border border-slate-300 px-4 py-2 font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-40"
+          >
+            Back
+          </button>
+
+          <button
+            type="button"
+            onClick={onReview ? () => void submitRegistration() : goNext}
+            disabled={status === 'submitting'}
+            className="rounded-md bg-brand-600 px-4 py-2 font-medium text-white hover:bg-brand-700 disabled:opacity-60"
+          >
+            {onReview ? (status === 'submitting' ? 'Submitting…' : 'Submit registration') : 'Next'}
+          </button>
+        </div>
         {status === 'error' && <p className="text-sm text-red-600">{message}</p>}
       </form>
     </>,
