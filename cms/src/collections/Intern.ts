@@ -7,7 +7,7 @@ import { adminOrRoleOwnsField, adminOrRoleOwnsFieldOnCreate, isAdmin } from '../
 // collection that references "intern" (Enrollments, Documents, Scores,
 // Evaluations, Workplans, Logbooks, Alumnae, ...) keeps relating to `users`.
 //
-// §7 sensitive fields (dateOfBirth, nationalIdNumber, kraPin, shifNumber,
+// §7 sensitive fields (dateOfBirth, idNumber, kraPin, shifNumber,
 // nssfNumber): same reasoning as Trainer.ts — row-level access already
 // limits reads to admin or the intern themself; the export-exclusion in
 // src/exports/registry.ts is what actually satisfies "not exposed in bulk
@@ -63,8 +63,9 @@ export const Intern: CollectionConfig = {
     { name: 'phone', type: 'text', required: true },
     { name: 'email', type: 'email', required: true },
     {
-      name: 'nationalIdNumber',
+      name: 'idNumber',
       type: 'text',
+      label: 'ID Number',
       required: true,
       admin: { description: 'National identifier or passport number (§5, §6.2, §7 — sensitive).' },
     },

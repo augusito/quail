@@ -10,7 +10,7 @@ import { adminOrRoleOwnsField, adminOrRoleOwnsFieldOnCreate, isAdmin } from '../
 // collection — this only holds the richer profile fields §6.2 asks to
 // collect, one row per trainer `User`.
 //
-// §7 "sensitive personal data" (nationalIdNumber, kraPin): row-level access
+// §7 "sensitive personal data" (idNumber, kraPin): row-level access
 // already limits reads to admin or the trainer themself (no other role is
 // granted "Register/manage own profile" for someone else's row, §4), so the
 // only realistic extra exposure surface is bulk export — handled by simply
@@ -52,8 +52,9 @@ export const Trainer: CollectionConfig = {
     { name: 'phone', type: 'text', required: true },
     { name: 'email', type: 'email', required: true },
     {
-      name: 'nationalIdNumber',
+      name: 'idNumber',
       type: 'text',
+      label: 'ID Number',
       required: true,
       admin: { description: 'National identifier or passport number (§5, §6.2, §7 — sensitive).' },
     },

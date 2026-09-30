@@ -110,7 +110,7 @@ describe('/api/register (§6.2 invite-link self-registration, proposal v2)', () 
       gender: 'female',
       nationality: 'Kenyan',
       phone: '0700000000',
-      nationalIdNumber: '12345678',
+      idNumber: '12345678',
       kraPin: 'A123456789Z',
       shifNumber: 'SHIF123',
       nssfNumber: 'NSSF123',
@@ -126,7 +126,7 @@ describe('/api/register (§6.2 invite-link self-registration, proposal v2)', () 
       occupation: 'Driving Instructor',
       organization: 'Acme Logistics',
       phone: '0700000001',
-      nationalIdNumber: '87654321',
+      idNumber: '87654321',
       kraPin: 'B987654321Z',
       ...overrides,
     }
@@ -218,7 +218,7 @@ describe('/api/register (§6.2 invite-link self-registration, proposal v2)', () 
         name: 'New Intern',
         gender: 'female',
         nationality: 'Kenyan',
-        nationalIdNumber: '12345678',
+        idNumber: '12345678',
         shifNumber: 'SHIF123',
         nssfNumber: 'NSSF123',
       })
