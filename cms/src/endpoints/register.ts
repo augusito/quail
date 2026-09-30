@@ -205,7 +205,8 @@ const submitEndpoint: Endpoint = {
             dateOfBirth: body.dateOfBirth as string,
             gender: body.gender as 'female' | 'male' | 'other',
             nationality: body.nationality as string,
-            address: typeof body.address === 'string' ? body.address : undefined,
+            physicalAddress:
+              typeof body.physicalAddress === 'string' ? body.physicalAddress : undefined,
             phone: body.phone as string,
             email: invite.email,
             idNumber: body.idNumber as string,
@@ -248,7 +249,8 @@ const submitEndpoint: Endpoint = {
             name: body.name as string,
             occupation: body.occupation as string,
             organization: typeof body.organization === 'string' ? body.organization : undefined,
-            address: typeof body.address === 'string' ? body.address : undefined,
+            physicalAddress:
+              typeof body.physicalAddress === 'string' ? body.physicalAddress : undefined,
             phone: body.phone as string,
             email: invite.email,
             idNumber: body.idNumber as string,

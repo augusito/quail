@@ -62,7 +62,7 @@ export const exportRegistry: Partial<Record<CollectionSlug, ExportDefinition<unk
     { header: 'Name', get: (d) => d.name },
     { header: 'Occupation', get: (d) => d.occupation },
     { header: 'Organization', get: (d) => d.organization ?? '' },
-    { header: 'Address', get: (d) => d.address ?? '' },
+    { header: 'Physical Address', get: (d) => d.physicalAddress ?? '' },
     { header: 'Phone', get: (d) => d.phone },
     { header: 'Email', get: (d) => d.email },
     // §7: idNumber and kraPin deliberately omitted — sensitive
@@ -74,7 +74,7 @@ export const exportRegistry: Partial<Record<CollectionSlug, ExportDefinition<unk
     { header: 'Name', get: (d) => d.name },
     { header: 'Gender', get: (d) => d.gender },
     { header: 'Nationality', get: (d) => d.nationality },
-    { header: 'Address', get: (d) => d.address ?? '' },
+    { header: 'Physical Address', get: (d) => d.physicalAddress ?? '' },
     { header: 'Phone', get: (d) => d.phone },
     { header: 'Email', get: (d) => d.email },
     { header: 'Next of Kin Name', get: (d) => d.nextOfKin?.name ?? '' },
