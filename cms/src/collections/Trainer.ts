@@ -48,7 +48,7 @@ export const Trainer: CollectionConfig = {
       type: 'text',
       admin: { description: 'The organization the trainer works for or represents, if any.' },
     },
-    { name: 'address', type: 'text' },
+    { name: 'address', type: 'text', label: 'Postal Address' },
     { name: 'phone', type: 'text', required: true },
     { name: 'email', type: 'email', required: true },
     {
