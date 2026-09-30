@@ -209,7 +209,7 @@ export interface Trainer {
    * The organization the trainer works for or represents, if any.
    */
   organization?: string | null;
-  physicalAddress?: string | null;
+  address?: string | null;
   phone: string;
   email: string;
   /**
@@ -240,7 +240,7 @@ export interface Intern {
   dateOfBirth: string;
   gender: 'female' | 'male' | 'other';
   nationality: string;
-  physicalAddress?: string | null;
+  address?: string | null;
   phone: string;
   email: string;
   /**
@@ -899,7 +899,7 @@ export interface TrainersSelect<T extends boolean = true> {
   name?: T;
   occupation?: T;
   organization?: T;
-  physicalAddress?: T;
+  address?: T;
   phone?: T;
   email?: T;
   idNumber?: T;
@@ -917,7 +917,7 @@ export interface InternsSelect<T extends boolean = true> {
   dateOfBirth?: T;
   gender?: T;
   nationality?: T;
-  physicalAddress?: T;
+  address?: T;
   phone?: T;
   email?: T;
   idNumber?: T;

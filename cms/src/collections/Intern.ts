@@ -59,7 +59,7 @@ export const Intern: CollectionConfig = {
       ],
     },
     { name: 'nationality', type: 'text', required: true },
-    { name: 'physicalAddress', type: 'text', label: 'Physical Address' },
+    { name: 'address', type: 'text', label: 'Postal Address' },
     { name: 'phone', type: 'text', required: true },
     { name: 'email', type: 'email', required: true },
     {

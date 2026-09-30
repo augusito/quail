@@ -34,7 +34,7 @@ const TRAINER_PROFILE_FIELDS: Field[] = [
   { key: 'occupation', label: 'Occupation', type: 'text', required: true },
   { key: 'organization', label: 'Organization', type: 'text', required: false },
   { key: 'phone', label: 'Phone', type: 'tel', required: true },
-  { key: 'physicalAddress', label: 'Physical Address', type: 'text', required: false },
+  { key: 'address', label: 'Postal Address', type: 'text', required: false },
 ]
 
 const INTERN_PERSONAL_FIELDS: Field[] = [
@@ -52,7 +52,7 @@ const INTERN_PERSONAL_FIELDS: Field[] = [
   },
   { key: 'nationality', label: 'Nationality', type: 'text', required: true },
   { key: 'phone', label: 'Phone', type: 'tel', required: true },
-  { key: 'physicalAddress', label: 'Physical Address', type: 'text', required: false },
+  { key: 'address', label: 'Postal Address', type: 'text', required: false },
 ]
 
 // National ID and KRA PIN apply to both roles; SHIF/NSSF only exist on the
@@ -194,7 +194,7 @@ export default function RegisterPage() {
             dateOfBirth: values.dateOfBirth,
             gender: values.gender,
             nationality: values.nationality,
-            physicalAddress: values.physicalAddress,
+            address: values.address,
             phone: values.phone,
             idNumber: values.idNumber,
             kraPin: values.kraPin,
@@ -214,7 +214,7 @@ export default function RegisterPage() {
             name: values.name,
             occupation: values.occupation,
             organization: values.organization,
-            physicalAddress: values.physicalAddress,
+            address: values.address,
             phone: values.phone,
             idNumber: values.idNumber,
             kraPin: values.kraPin,
