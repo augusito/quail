@@ -42,7 +42,7 @@ export const Trainer: CollectionConfig = {
       },
     },
     { name: 'name', type: 'text', required: true },
-    { name: 'occupation', type: 'text', required: true, label: 'Job title' },
+    { name: 'occupation', type: 'text', required: true },
     {
       name: 'organization',
       type: 'text',
