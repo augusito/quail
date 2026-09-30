@@ -165,7 +165,7 @@ the `user` relationship field's own separate validation rejects a
 string id for a numeric-id collection regardless, so testing through the
 full pipeline would fail for the wrong reason).
 
-§7 "sensitive personal data" (`dateOfBirth`, `nationalIdNumber`,
+§7 "sensitive personal data" (`dateOfBirth`, `idNumber`,
 `kraPin`, `shifNumber`, `nssfNumber`): row-level access above already
 limits reads to admin or the person themself, so there's no other reader
 inside the app to restrict further. The actual requirement — "not
@@ -457,7 +457,7 @@ spreadsheet whenever a field is added.
 
 This hand-written-column approach is also what satisfies §7's new "not
 exposed in bulk exports" requirement (proposal v2) for `Trainer`/`Intern`'s
-sensitive fields (`dateOfBirth`, `nationalIdNumber`, `kraPin`,
+sensitive fields (`dateOfBirth`, `idNumber`, `kraPin`,
 `shifNumber`, `nssfNumber`) — the `trainers`/`interns` definitions simply
 never list those columns. Verified with a real `.xlsx`, not just by
 re-reading the column list: `tests/int/exports.int.spec.ts` seeds a

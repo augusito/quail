@@ -151,8 +151,8 @@ const submitEndpoint: Endpoint = {
     const { invite } = result
 
     const requiredByRole = invite.role === 'intern'
-      ? ['name', 'dateOfBirth', 'gender', 'nationality', 'phone', 'nationalIdNumber', 'kraPin', 'shifNumber', 'nssfNumber']
-      : ['name', 'occupation', 'phone', 'nationalIdNumber', 'kraPin']
+      ? ['name', 'dateOfBirth', 'gender', 'nationality', 'phone', 'idNumber', 'kraPin', 'shifNumber', 'nssfNumber']
+      : ['name', 'occupation', 'phone', 'idNumber', 'kraPin']
     const missing = missingFields(body, requiredByRole)
 
     const nextOfKin = (body.nextOfKin ?? {}) as Record<string, unknown>
@@ -208,7 +208,7 @@ const submitEndpoint: Endpoint = {
             address: typeof body.address === 'string' ? body.address : undefined,
             phone: body.phone as string,
             email: invite.email,
-            nationalIdNumber: body.nationalIdNumber as string,
+            idNumber: body.idNumber as string,
             kraPin: body.kraPin as string,
             shifNumber: body.shifNumber as string,
             nssfNumber: body.nssfNumber as string,
@@ -251,7 +251,7 @@ const submitEndpoint: Endpoint = {
             address: typeof body.address === 'string' ? body.address : undefined,
             phone: body.phone as string,
             email: invite.email,
-            nationalIdNumber: body.nationalIdNumber as string,
+            idNumber: body.idNumber as string,
             kraPin: body.kraPin as string,
           },
           overrideAccess: true,

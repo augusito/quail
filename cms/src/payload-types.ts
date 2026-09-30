@@ -215,7 +215,7 @@ export interface Trainer {
   /**
    * National identifier or passport number (§5, §6.2, §7 — sensitive).
    */
-  nationalIdNumber: string;
+  idNumber: string;
   /**
    * KRA PIN (§5, §6.2, §7 — sensitive).
    */
@@ -246,7 +246,7 @@ export interface Intern {
   /**
    * National identifier or passport number (§5, §6.2, §7 — sensitive).
    */
-  nationalIdNumber: string;
+  idNumber: string;
   /**
    * KRA PIN (§5, §6.2, §7 — sensitive).
    */
@@ -902,7 +902,7 @@ export interface TrainersSelect<T extends boolean = true> {
   address?: T;
   phone?: T;
   email?: T;
-  nationalIdNumber?: T;
+  idNumber?: T;
   kraPin?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -920,7 +920,7 @@ export interface InternsSelect<T extends boolean = true> {
   address?: T;
   phone?: T;
   email?: T;
-  nationalIdNumber?: T;
+  idNumber?: T;
   kraPin?: T;
   shifNumber?: T;
   nssfNumber?: T;
