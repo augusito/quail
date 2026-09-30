@@ -54,6 +54,7 @@ export const Trainer: CollectionConfig = {
     {
       name: 'nationalIdNumber',
       type: 'text',
+      label: 'ID Number',
       required: true,
       admin: { description: 'National identifier or passport number (§5, §6.2, §7 — sensitive).' },
     },
