@@ -124,6 +124,7 @@ describe('/api/register (§6.2 invite-link self-registration, proposal v2)', () 
       password: 'test1234',
       name: 'New Trainer',
       occupation: 'Driving Instructor',
+      organization: 'Acme Logistics',
       phone: '0700000001',
       nationalIdNumber: '87654321',
       kraPin: 'B987654321Z',
@@ -311,7 +312,11 @@ describe('/api/register (§6.2 invite-link self-registration, proposal v2)', () 
         overrideAccess: true,
       })
       expect(trainerProfiles).toHaveLength(1)
-      expect(trainerProfiles[0]).toMatchObject({ name: 'New Trainer', occupation: 'Driving Instructor' })
+      expect(trainerProfiles[0]).toMatchObject({
+        name: 'New Trainer',
+        occupation: 'Driving Instructor',
+        organization: 'Acme Logistics',
+      })
 
       const { docs: contracts } = await payload.find({
         collection: 'contracts',

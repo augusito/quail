@@ -205,6 +205,10 @@ export interface Trainer {
   user: number | User;
   name: string;
   occupation: string;
+  /**
+   * The organization the trainer works for or represents, if any.
+   */
+  organization?: string | null;
   address?: string | null;
   phone: string;
   email: string;
@@ -894,6 +898,7 @@ export interface TrainersSelect<T extends boolean = true> {
   user?: T;
   name?: T;
   occupation?: T;
+  organization?: T;
   address?: T;
   phone?: T;
   email?: T;

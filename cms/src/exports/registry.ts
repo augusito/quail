@@ -60,7 +60,8 @@ export const exportRegistry: Partial<Record<CollectionSlug, ExportDefinition<unk
   trainers: defineExport<Trainer>('Trainers', [
     { header: 'ID', get: (d) => d.id },
     { header: 'Name', get: (d) => d.name },
-    { header: 'Occupation', get: (d) => d.occupation },
+    { header: 'Job Title', get: (d) => d.occupation },
+    { header: 'Organization', get: (d) => d.organization ?? '' },
     { header: 'Address', get: (d) => d.address ?? '' },
     { header: 'Phone', get: (d) => d.phone },
     { header: 'Email', get: (d) => d.email },

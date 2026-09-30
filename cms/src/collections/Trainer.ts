@@ -21,7 +21,7 @@ export const Trainer: CollectionConfig = {
   slug: 'trainers',
   admin: {
     useAsTitle: 'name',
-    defaultColumns: ['name', 'occupation', 'phone'],
+    defaultColumns: ['name', 'organization', 'occupation', 'phone'],
   },
   access: {
     create: adminOrRoleOwnsFieldOnCreate('trainer', 'user'),
@@ -42,7 +42,12 @@ export const Trainer: CollectionConfig = {
       },
     },
     { name: 'name', type: 'text', required: true },
-    { name: 'occupation', type: 'text', required: true },
+    { name: 'occupation', type: 'text', required: true, label: 'Job title' },
+    {
+      name: 'organization',
+      type: 'text',
+      admin: { description: 'The organization the trainer works for or represents, if any.' },
+    },
     { name: 'address', type: 'text' },
     { name: 'phone', type: 'text', required: true },
     { name: 'email', type: 'email', required: true },
