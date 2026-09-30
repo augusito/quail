@@ -247,6 +247,7 @@ const submitEndpoint: Endpoint = {
             user: user.id,
             name: body.name as string,
             occupation: body.occupation as string,
+            organization: typeof body.organization === 'string' ? body.organization : undefined,
             address: typeof body.address === 'string' ? body.address : undefined,
             phone: body.phone as string,
             email: invite.email,

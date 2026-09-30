@@ -32,6 +32,7 @@ const ACCOUNT_FIELDS: Field[] = [
 
 const TRAINER_PROFILE_FIELDS: Field[] = [
   { key: 'occupation', label: 'Occupation', type: 'text', required: true },
+  { key: 'organization', label: 'Organization', type: 'text', required: false },
   { key: 'phone', label: 'Phone', type: 'tel', required: true },
   { key: 'address', label: 'Address', type: 'text', required: false },
 ]
@@ -212,6 +213,7 @@ export default function RegisterPage() {
             password: values.password,
             name: values.name,
             occupation: values.occupation,
+            organization: values.organization,
             address: values.address,
             phone: values.phone,
             nationalIdNumber: values.nationalIdNumber,
