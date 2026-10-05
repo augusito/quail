@@ -262,16 +262,11 @@ const submitEndpoint: Endpoint = {
         })
         created.push({ collection: 'trainers', id: trainer.id })
 
-        // §6.2: trainers aren't tied to a cohort at invite time — a Draft
-        // contract stub is still created so admin has the natural next
-        // step (pick a cohort, upload terms, move to Sent), but its cohort
-        // is left unset here.
-        const contract = await req.payload.create({
-          collection: 'contracts',
-          data: { trainer: user.id, status: 'draft' },
-          overrideAccess: true,
-        })
-        created.push({ collection: 'contracts', id: contract.id })
+        // §6.2: trainers aren't tied to a cohort at invite time, and a
+        // Contract always is (one per cohort the trainer participates
+        // in) — so there's no cohort to create a Draft stub against yet.
+        // Admin creates each Contract separately once a cohort is lined
+        // up for this trainer.
       }
     } catch (err) {
       await Promise.all(

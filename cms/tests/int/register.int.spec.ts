@@ -310,7 +310,7 @@ describe('/api/register (§6.2 invite-link self-registration, proposal v2)', () 
   })
 
   describe('trainer registration', () => {
-    it('registers a new trainer, creates their profile, and a Draft contract with no cohort yet', async () => {
+    it('registers a new trainer and creates their profile, with no contract yet (contracts are per-cohort, created separately)', async () => {
       const { invite } = await createInvite('trainer')
 
       const response = await callRegister({ token: invite.token, ...trainerBody() })
@@ -339,9 +339,7 @@ describe('/api/register (§6.2 invite-link self-registration, proposal v2)', () 
         where: { trainer: { equals: user.id } },
         overrideAccess: true,
       })
-      expect(contracts).toHaveLength(1)
-      expect(contracts[0].status).toBe('draft')
-      expect(contracts[0].cohort).toBeFalsy()
+      expect(contracts).toHaveLength(0)
     })
 
     it('rejects a request missing required trainer fields', async () => {

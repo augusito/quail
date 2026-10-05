@@ -390,9 +390,9 @@ export interface Contract {
   id: number;
   trainer: number | User;
   /**
-   * Trainers are not tied to a cohort at invite time (§6.2) — admin picks the cohort here when preparing the contract.
+   * Trainers aren't tied to a cohort at invite time (§6.2) — each contract is created separately, per cohort the trainer participates in.
    */
-  cohort?: (number | null) | Cohort;
+  cohort: number | Cohort;
   status: 'draft' | 'sent' | 'signed' | 'active' | 'released';
   /**
    * Signed, scanned contract upload.
