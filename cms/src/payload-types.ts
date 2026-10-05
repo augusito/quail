@@ -353,12 +353,15 @@ export interface Enrollment {
  */
 export interface Invite {
   id: number;
-  cohort: number | Cohort;
   role: 'intern' | 'trainer';
   /**
    * Only this address can complete registration with the resulting link (§6.2).
    */
   email: string;
+  /**
+   * Which cohort this intern is enrolled into. Not used for trainer invites.
+   */
+  cohort?: (number | null) | Cohort;
   /**
    * Which track this intern is auto-enrolled into. Not used for trainer invites.
    */
@@ -386,6 +389,9 @@ export interface Invite {
 export interface Contract {
   id: number;
   trainer: number | User;
+  /**
+   * Trainers aren't tied to a cohort at invite time (§6.2) — each contract is created separately, per cohort the trainer participates in.
+   */
   cohort: number | Cohort;
   status: 'draft' | 'sent' | 'signed' | 'active' | 'released';
   /**
@@ -1002,9 +1008,9 @@ export interface EnrollmentsSelect<T extends boolean = true> {
  * via the `definition` "invites_select".
  */
 export interface InvitesSelect<T extends boolean = true> {
-  cohort?: T;
   role?: T;
   email?: T;
+  cohort?: T;
   track?: T;
   token?: T;
   expiresAt?: T;
