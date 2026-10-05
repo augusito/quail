@@ -113,6 +113,30 @@ describe('create access rejects naming someone else as the owner field', () => {
     expect(ownNote.id).toBeDefined()
   })
 
+  it('a trainer cannot create a Note against a session they do not teach, even naming themselves', async () => {
+    const cohort = await payload.create({
+      collection: 'cohorts',
+      data: { name: 'CAO Notes Cohort', tracks: ['ict' as const], startDate: '2026-01-01', endDate: '2026-06-01', status: 'open' as const },
+      overrideAccess: true,
+    })
+    const trainingModule = await payload.create({ collection: 'modules', data: { track: 'ict', name: 'CAO Notes Module' }, overrideAccess: true })
+    const othersSession = await payload.create({
+      collection: 'sessions',
+      data: { module: trainingModule.id, trainer: seeded.trainerB.id, cohort: cohort.id, scheduledDate: '2026-02-01', status: 'scheduled' as const },
+      overrideAccess: true,
+    })
+
+    // Self-attributed `trainer`, but the session belongs to trainerB: denied.
+    await expect(
+      payload.create({
+        collection: 'notes',
+        data: { session: othersSession.id, trainer: seeded.trainerA.id },
+        overrideAccess: false,
+        user: seeded.trainerA,
+      }),
+    ).rejects.toThrow()
+  })
+
   it('an intern cannot create a Document naming another intern as its owner', async () => {
     const file = await uploadDummyFile(payload)
 

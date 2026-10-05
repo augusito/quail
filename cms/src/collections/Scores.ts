@@ -1,13 +1,16 @@
 import type { Access, AccessResult, CollectionConfig } from 'payload'
 
 import { hasRole, isAdmin } from '../access/roles'
-import { getTrainerModuleIds } from '../access/scoping'
+import { getTrainerModuleIds, isInternInTrainerModuleCohort } from '../access/scoping'
 
 const createAccess: Access = async ({ req: { user, payload }, data }) => {
   if (hasRole(user, 'admin')) return true
   if (!hasRole(user, 'trainer')) return false
-  const moduleIds = await getTrainerModuleIds(payload, user!.id)
-  return moduleIds.some((id) => id === data?.module)
+  if (data?.module === undefined || data?.intern === undefined) return false
+  // Owning the module isn't enough on its own — it can run across several
+  // cohorts, so the named intern must actually be enrolled in one this
+  // trainer teaches it in (see isInternInTrainerModuleCohort).
+  return isInternInTrainerModuleCohort(payload, user!.id, data.intern, data.module)
 }
 
 const readAccess: Access = async ({ req: { user, payload } }): Promise<AccessResult> => {

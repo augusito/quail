@@ -1,6 +1,7 @@
-import type { CollectionConfig } from 'payload'
+import type { Access, CollectionConfig } from 'payload'
 
-import { adminOrRoleOwnsField, adminOrRoleOwnsFieldOnCreate, isAdmin } from '../access/roles'
+import { adminOrRoleOwnsField, hasRole, isAdmin } from '../access/roles'
+import { isSessionOwnedByTrainer } from '../access/scoping'
 
 // §6.4 per-session deliverables: slide deck, prose write-up, the assignment
 // given to interns, and an end-of-module assessment report.
@@ -9,6 +10,15 @@ import { adminOrRoleOwnsField, adminOrRoleOwnsFieldOnCreate, isAdmin } from '../
 // granted to interns/supervisors in the matrix.
 //
 // Renamed from `ModuleNote` to `Note` per proposal v2's §5 naming notes.
+const createAccess: Access = async ({ req: { user, payload }, data }) => {
+  if (hasRole(user, 'admin')) return true
+  if (!hasRole(user, 'trainer')) return false
+  if (data?.trainer !== user!.id || data?.session === undefined) return false
+  // Self-attributing `trainer` isn't enough on its own — the named
+  // `session` must actually be one this trainer teaches.
+  return isSessionOwnedByTrainer(payload, user!.id, data.session)
+}
+
 export const Note: CollectionConfig = {
   slug: 'notes',
   admin: {
@@ -16,7 +26,7 @@ export const Note: CollectionConfig = {
     defaultColumns: ['session', 'trainer'],
   },
   access: {
-    create: adminOrRoleOwnsFieldOnCreate('trainer', 'trainer'),
+    create: createAccess,
     read: adminOrRoleOwnsField('trainer', 'trainer'),
     update: adminOrRoleOwnsField('trainer', 'trainer'),
     delete: isAdmin,

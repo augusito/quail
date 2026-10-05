@@ -171,6 +171,57 @@ export async function getAccessibleFileIds(payload: Payload, userId: ID): Promis
 }
 
 /**
+ * §6.5/§10: owning a module (getTrainerModuleIds, derived from
+ * Session.trainer) isn't enough on its own to let a trainer post a Score
+ * for a given intern — a module can run across several cohorts, so this
+ * additionally requires the intern to be enrolled in a cohort where *this*
+ * trainer actually has a session for *this* module, not just any cohort.
+ * Used by Scores' create access (src/collections/Scores.ts).
+ */
+export async function isInternInTrainerModuleCohort(
+  payload: Payload,
+  trainerId: ID,
+  internId: ID,
+  moduleId: ID,
+): Promise<boolean> {
+  const { docs: sessions } = await payload.find({
+    collection: 'sessions',
+    where: { and: [{ trainer: { equals: trainerId } }, { module: { equals: moduleId } }] },
+    limit: 0,
+    depth: 0,
+    overrideAccess: true,
+  })
+  const cohortIds = [...new Set(sessions.map((doc) => doc.cohort as ID))]
+  if (cohortIds.length === 0) return false
+
+  const { totalDocs } = await payload.find({
+    collection: 'enrollments',
+    where: { and: [{ intern: { equals: internId } }, { cohort: { in: cohortIds } }] },
+    limit: 0,
+    depth: 0,
+    overrideAccess: true,
+  })
+  return totalDocs > 0
+}
+
+/**
+ * §4 "Post module notes/scores": a trainer's self-attributed `trainer`
+ * field on Note (checked by adminOrRoleOwnsFieldOnCreate) only proves who's
+ * submitting, not that the named `session` is actually theirs to annotate.
+ * Used by Note's create access (src/collections/Note.ts).
+ */
+export async function isSessionOwnedByTrainer(payload: Payload, trainerId: ID, sessionId: ID): Promise<boolean> {
+  const { totalDocs } = await payload.find({
+    collection: 'sessions',
+    where: { and: [{ id: { equals: sessionId } }, { trainer: { equals: trainerId } }] },
+    limit: 0,
+    depth: 0,
+    overrideAccess: true,
+  })
+  return totalDocs > 0
+}
+
+/**
  * §4 "Media library access… unless granted per cohort" — Cohort.mediaAccessGrantedTo
  * (added for this) is admin's per-cohort allowlist of trainers. Resolves
  * which cohorts a given trainer has been granted into.
