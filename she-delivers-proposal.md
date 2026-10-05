@@ -57,7 +57,7 @@ This system digitizes cohort management, training delivery, compliance documenta
 - **Invite** → role (intern/trainer), email, cohort (intern only), track (intern only), token, status (sent/used/expired/revoked), expires at, created by.
 - **Cohort** → name, tracks (multi-select), start/end date, status (draft → open → active → closed), media-access grant list (which trainers may see this cohort's cohort-extended media).
 - **Enrollment** → links Intern ↔ Cohort ↔ Track ↔ Supervisor, outcome (in-progress/graduated/resigned/terminated).
-- **Contract** → trainer, cohort (required — a contract is always per-cohort), status (draft → sent → signed → active → released/discharged), file, rate per session (reference only, not processed for payment), media consent, release-requested flag.
+- **Contract** → trainer, cohort (required — a contract is always per-cohort), status (draft → sent → signed → active → released/discharged), file, media consent, release-requested flag.
 - **Module** → track, name, curriculum reference.
 - **Session** → module, trainer, cohort, scheduled date, status (scheduled/completed/rescheduled/cancelled), reminder status.
 - **Note** → session, trainer, content (prose write-up), slide deck, assignment, end-of-module assessment report (all file attachments).
