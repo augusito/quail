@@ -4,7 +4,7 @@ import type { Contract } from '../payload-types'
 
 /**
  * §6.4: "Contract lifecycle state machine: Draft → Sent → Signed → Active →
- * Released/Discharged... Each transition is enforced with a straightforward
+ * Released... Each transition is enforced with a straightforward
  * validation check (which role may move it, and from which prior state)".
  *
  * Access control (src/access/roles.ts, wired into Contracts.ts) already
@@ -83,7 +83,7 @@ export const validateContractStatusTransition: CollectionBeforeChangeHook<Contra
     const reason =
       toIndex < fromIndex
         ? 'contracts cannot move backward'
-        : 'contracts must progress one step at a time (Draft → Sent → Signed → Active → Released/Discharged)'
+        : 'contracts must progress one step at a time (Draft → Sent → Signed → Active → Released)'
     throw new APIError(`Cannot move this contract from "${from}" to "${to}" — ${reason}.`, 400, undefined, true)
   }
 

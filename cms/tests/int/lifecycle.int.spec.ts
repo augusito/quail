@@ -200,7 +200,7 @@ describe('Contract lifecycle & cohort-closing guards (§6.1, §6.4)', () => {
       expect(requested.releaseRequested).toBe(true)
     })
 
-    it('only admin may release/discharge a contract, never the trainer', async () => {
+    it('only admin may release a contract, never the trainer', async () => {
       const cohort = await createCohort('Contract Test C')
       const contract = await payload.create({
         collection: 'contracts',

@@ -244,12 +244,12 @@ engine" guards §6.1/§6.4/§10 ask for, layered on top of (not instead of)
 the access control above:
 
 - **Contract lifecycle** (`src/hooks/contractLifecycle.ts`, on `Contracts`)
-  — enforces the Draft → Sent → Signed → Active → Released/Discharged
+  — enforces the Draft → Sent → Signed → Active → Released
   order one step at a time (no skipping, no going backward) and which role
   may make each specific transition: admin for every step except
   Sent→Signed, which the contract's own trainer may also make (uploading
   their signed scan back). Only admin may ever move a contract to
-  Released/Discharged, matching the proposal's confirmed decision. A
+  Released, matching the proposal's confirmed decision. A
   trainer "flagging/requesting completion" (§6.4) is the separate
   `releaseRequested` checkbox — it doesn't itself change `status`, and the
   hook only lets it be raised while the contract is Active (requesting
@@ -265,7 +265,7 @@ the access control above:
   `Cohorts`) — blocks a transition to `closed` unless every
   still-in-progress enrollment in that cohort has at least one Evaluation
   on record and no pending/rejected Document, and every Contract for that
-  cohort is Released/Discharged. This is a literal, simplified reading —
+  cohort is Released. This is a literal, simplified reading —
   it doesn't check evaluations are complete *per track* (e.g. both
   driving-skills checkpoints for a driver-track intern); see the comment
   in that file.
