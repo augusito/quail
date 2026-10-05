@@ -39,17 +39,6 @@ const TRAINER_PROFILE_FIELDS: Field[] = [
 
 const INTERN_PERSONAL_FIELDS: Field[] = [
   { key: 'dateOfBirth', label: 'Date of birth', type: 'date', required: true },
-  {
-    key: 'gender',
-    label: 'Gender',
-    type: 'select',
-    required: true,
-    options: [
-      { value: 'female', label: 'Female' },
-      { value: 'male', label: 'Male' },
-      { value: 'other', label: 'Other' },
-    ],
-  },
   { key: 'nationality', label: 'Nationality', type: 'text', required: true },
   { key: 'phone', label: 'Phone', type: 'tel', required: true },
   { key: 'address', label: 'Postal Address', type: 'text', required: false },
@@ -192,7 +181,6 @@ export default function RegisterPage() {
             password: values.password,
             name: values.name,
             dateOfBirth: values.dateOfBirth,
-            gender: values.gender,
             nationality: values.nationality,
             address: values.address,
             phone: values.phone,

@@ -238,7 +238,6 @@ export interface Intern {
    * Statutory/records purposes only — no minimum-age gate is enforced at registration (§6.2, confirmed not needed for v1).
    */
   dateOfBirth: string;
-  gender: 'female' | 'male' | 'other';
   nationality: string;
   address?: string | null;
   phone: string;
@@ -915,7 +914,6 @@ export interface InternsSelect<T extends boolean = true> {
   user?: T;
   name?: T;
   dateOfBirth?: T;
-  gender?: T;
   nationality?: T;
   address?: T;
   phone?: T;

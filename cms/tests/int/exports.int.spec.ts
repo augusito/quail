@@ -181,7 +181,6 @@ describe('GET /api/export/:collection (§6.11 Excel exports)', () => {
         user: seeded.intern.id,
         name: 'Export Intern',
         dateOfBirth: '2000-05-05',
-        gender: 'female' as const,
         nationality: 'Kenyan',
         phone: '0711111111',
         email: seeded.intern.email,
