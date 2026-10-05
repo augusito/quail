@@ -97,7 +97,7 @@ export const Invites: CollectionConfig = {
       // `ValidateOptions`/value shape.
       validate: validateCohort as unknown as RelationshipFieldSingleValidation,
       admin: {
-        condition: (_, siblingData) => siblingData?.role !== 'trainer',
+        condition: (_, siblingData) => siblingData?.role === 'intern',
         description: 'Which cohort this intern is enrolled into. Not used for trainer invites.',
       },
     },
