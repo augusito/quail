@@ -101,7 +101,6 @@ export const exportRegistry: Partial<Record<CollectionSlug, ExportDefinition<unk
     { header: 'Trainer', get: (d) => displayName(d.trainer) },
     { header: 'Cohort', get: (d) => displayName(d.cohort) },
     { header: 'Status', get: (d) => d.status },
-    { header: 'Rate Per Session', get: (d) => d.ratePerSession ?? '' },
     { header: 'Release Requested', get: (d) => formatBoolean(d.releaseRequested) },
     { header: 'Media Consent', get: (d) => formatBoolean(d.mediaConsent) },
   ]),

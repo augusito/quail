@@ -394,10 +394,6 @@ export interface Contract {
    */
   file?: (number | null) | File;
   /**
-   * Reference only — used to produce session-count evidence for the trainer's own invoice. Not processed for payment (§3, §6.4).
-   */
-  ratePerSession?: number | null;
-  /**
    * Standing media-release consent from the Trainers Agreement (name/photo/video usable in promotional material).
    */
   mediaConsent?: boolean | null;
@@ -1024,7 +1020,6 @@ export interface ContractsSelect<T extends boolean = true> {
   cohort?: T;
   status?: T;
   file?: T;
-  ratePerSession?: T;
   mediaConsent?: T;
   releaseRequested?: T;
   updatedAt?: T;

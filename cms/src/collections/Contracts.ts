@@ -1,13 +1,11 @@
 import type { CollectionConfig } from 'payload'
 
-import { adminOnlyField, adminOrRoleOwnsField, isAdmin } from '../access/roles'
+import { adminOrRoleOwnsField, isAdmin } from '../access/roles'
 import { validateContractStatusTransition } from '../hooks/contractLifecycle'
 
 // §6.4: admin uploads terms, trainer downloads/signs/scans/uploads back.
 // Lifecycle: Draft → Sent → Signed → Active → Released/Discharged, and only
-// admin may move a contract to Released/Discharged (confirmed). ratePerSession
-// is reference-only — payment processing is out of scope for v1 (§3); the
-// platform's job is limited to giving an accurate completed-session count.
+// admin may move a contract to Released/Discharged (confirmed).
 //
 // Access control below grants trainers row-level read/write on their own
 // contract (§4 "Sign & manage own contract"); the beforeChange hook narrows
@@ -60,25 +58,6 @@ export const Contracts: CollectionConfig = {
       relationTo: 'files',
       admin: {
         description: 'Signed, scanned contract upload.',
-      },
-    },
-    {
-      name: 'ratePerSession',
-      type: 'number',
-      // §6.4: "admin uploads the contract terms" — the rate is one of those
-      // terms, set by admin, not something the trainer negotiates by editing
-      // their own contract row. Row-level access above grants a trainer
-      // write access to their own contract (to sign, upload the file, flag
-      // release), but that shouldn't extend to unilaterally changing the
-      // agreed rate — so this field, unlike the rest of the collection,
-      // needs its own admin-only lock (same pattern as
-      // Documents.verificationStatus).
-      access: {
-        create: adminOnlyField,
-        update: adminOnlyField,
-      },
-      admin: {
-        description: 'Reference only — used to produce session-count evidence for the trainer\'s own invoice. Not processed for payment (§3, §6.4).',
       },
     },
     {

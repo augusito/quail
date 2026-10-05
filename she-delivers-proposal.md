@@ -51,7 +51,7 @@ This system digitizes cohort management, training delivery, compliance documenta
 - **User** → role, contact info, status (active/inactive)
 - **Cohort** → name, track(s), start/end date, status (draft → open → active → closed)
 - **Enrollment** → links Intern ↔ Cohort ↔ Track (a cohort may run multiple tracks concurrently)
-- **Contract** → party (trainer), cohort, status (draft → sent → signed → active → released/discharged), file, agreed rate per session (reference only, not processed for payment)
+- **Contract** → party (trainer), cohort, status (draft → sent → signed → active → released/discharged), file
 - **Module** → track, name, curriculum reference
 - **TrainingSession** → module, trainer, cohort, scheduled date, status (scheduled/completed/rescheduled/cancelled), reminder status
 - **ModuleNote** → session, trainer, content, attachments (session slides, prose write-up, assignment given, end-of-module assessment report)

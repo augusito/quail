@@ -18,10 +18,10 @@ let seeded: Seeded
 
 // Regression coverage for the four access-control gaps found in the
 // consistency/completeness/correctness review of proposal v2 (PR #7):
-// §6.10 logbook read-only after graduation, §6.4 admin-only ratePerSession,
+// §6.10 logbook read-only after graduation, §6.4 contract row-level access,
 // §6.5 driving-skills-checkpoint track scoping, and job-managed
 // Session.reminderStatus.
-describe('Review fixes: logbook read-only, contract rate lock, driving-skills track scoping, reminder status lock', () => {
+describe('Review fixes: logbook read-only, contract row-level access, driving-skills track scoping, reminder status lock', () => {
   beforeAll(async () => {
     const payloadConfig = await config
     payload = await getPayload({ config: payloadConfig })
@@ -147,49 +147,8 @@ describe('Review fixes: logbook read-only, contract rate lock, driving-skills tr
     })
   })
 
-  describe('§6.4 Contracts.ratePerSession is admin-only', () => {
-    it('a trainer cannot change the rate on their own contract', async () => {
-      const cohort = await createCohort('Contract Rate Test')
-      const contract = await payload.create({
-        collection: 'contracts',
-        data: { trainer: seeded.trainer.id, cohort: cohort.id, status: 'draft' as const, ratePerSession: 7500 },
-        overrideAccess: true,
-      })
-
-      const attempted = await payload.update({
-        collection: 'contracts',
-        id: contract.id,
-        data: { ratePerSession: 50000 },
-        overrideAccess: false,
-        user: seeded.trainer,
-      })
-      // Field-level access silently drops disallowed fields rather than
-      // throwing, so assert the value didn't actually change.
-      expect(attempted.ratePerSession).toBe(7500)
-
-      const reread = await payload.findByID({ collection: 'contracts', id: contract.id, overrideAccess: true })
-      expect(reread.ratePerSession).toBe(7500)
-    })
-
-    it('admin can set the rate', async () => {
-      const cohort = await createCohort('Contract Rate Test 2')
-      const contract = await payload.create({
-        collection: 'contracts',
-        data: { trainer: seeded.trainer.id, cohort: cohort.id, status: 'draft' as const },
-        overrideAccess: true,
-      })
-
-      const updated = await payload.update({
-        collection: 'contracts',
-        id: contract.id,
-        data: { ratePerSession: 8000 },
-        overrideAccess: false,
-        user: seeded.admin,
-      })
-      expect(updated.ratePerSession).toBe(8000)
-    })
-
-    it('a trainer can still sign their own contract (unrelated field still writable)', async () => {
+  describe('§6.4 Contracts: trainer row-level access', () => {
+    it('a trainer can sign their own contract', async () => {
       const cohort = await createCohort('Contract Rate Test 3')
       const contract = await payload.create({
         collection: 'contracts',
