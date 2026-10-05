@@ -107,7 +107,6 @@ describe('/api/register (§6.2 invite-link self-registration, proposal v2)', () 
       password: 'test1234',
       name: 'New Intern',
       dateOfBirth: '2000-01-01',
-      gender: 'female',
       nationality: 'Kenyan',
       phone: '0700000000',
       idNumber: '12345678',
@@ -216,7 +215,6 @@ describe('/api/register (§6.2 invite-link self-registration, proposal v2)', () 
       expect(internProfiles).toHaveLength(1)
       expect(internProfiles[0]).toMatchObject({
         name: 'New Intern',
-        gender: 'female',
         nationality: 'Kenyan',
         idNumber: '12345678',
         shifNumber: 'SHIF123',
@@ -262,12 +260,11 @@ describe('/api/register (§6.2 invite-link self-registration, proposal v2)', () 
     it('rolls back the created user (and leaves the invite usable) if profile creation fails partway', async () => {
       const { invite } = await createInvite('intern')
 
-      // `gender` is a non-empty string, so it passes the endpoint's own
-      // presence check, but isn't one of Intern.gender's select options —
-      // this only fails once the `interns` collection's own field
-      // validation runs, i.e. *after* the User row has already been
-      // created.
-      const response = await callRegister({ token: invite.token, ...internBody({ gender: 'not-a-real-option' }) })
+      // `dateOfBirth` is a non-empty string, so it passes the endpoint's own
+      // presence check, but isn't a parseable date — this only fails once
+      // the `interns` collection's own field validation runs, i.e. *after*
+      // the User row has already been created.
+      const response = await callRegister({ token: invite.token, ...internBody({ dateOfBirth: 'not-a-real-date' }) })
       expect(response.status).toBe(400)
 
       const { docs: orphanedUsers } = await payload.find({

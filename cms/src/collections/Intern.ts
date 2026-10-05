@@ -48,16 +48,6 @@ export const Intern: CollectionConfig = {
           'Statutory/records purposes only — no minimum-age gate is enforced at registration (§6.2, confirmed not needed for v1).',
       },
     },
-    {
-      name: 'gender',
-      type: 'select',
-      required: true,
-      options: [
-        { label: 'Female', value: 'female' },
-        { label: 'Male', value: 'male' },
-        { label: 'Other', value: 'other' },
-      ],
-    },
     { name: 'nationality', type: 'text', required: true },
     { name: 'address', type: 'text', label: 'Postal Address' },
     { name: 'phone', type: 'text', required: true },

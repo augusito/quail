@@ -151,7 +151,7 @@ const submitEndpoint: Endpoint = {
     const { invite } = result
 
     const requiredByRole = invite.role === 'intern'
-      ? ['name', 'dateOfBirth', 'gender', 'nationality', 'phone', 'idNumber', 'kraPin', 'shifNumber', 'nssfNumber']
+      ? ['name', 'dateOfBirth', 'nationality', 'phone', 'idNumber', 'kraPin', 'shifNumber', 'nssfNumber']
       : ['name', 'occupation', 'phone', 'idNumber', 'kraPin']
     const missing = missingFields(body, requiredByRole)
 
@@ -185,7 +185,7 @@ const submitEndpoint: Endpoint = {
     const cohortId = typeof invite.cohort === 'object' ? invite.cohort.id : invite.cohort
 
     // From here on, `user` already exists — if any later step throws (e.g.
-    // a bad `gender`/`track` value that isn't caught by the presence-only
+    // a bad `track` value that isn't caught by the presence-only
     // `missingFields` check above, but is by these collections' own field
     // validation), we must not leave an orphaned user sitting on an
     // otherwise-still-`sent` invite: retrying would immediately fail with
@@ -203,7 +203,6 @@ const submitEndpoint: Endpoint = {
             user: user.id,
             name: body.name as string,
             dateOfBirth: body.dateOfBirth as string,
-            gender: body.gender as 'female' | 'male' | 'other',
             nationality: body.nationality as string,
             address: typeof body.address === 'string' ? body.address : undefined,
             phone: body.phone as string,
