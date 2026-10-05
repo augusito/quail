@@ -57,7 +57,7 @@ This system digitizes cohort management, training delivery, compliance documenta
 - **Invite** → role (intern/trainer), email, cohort (intern only), track (intern only), token, status (sent/used/expired/revoked), expires at, created by.
 - **Cohort** → name, tracks (multi-select), start/end date, status (draft → open → active → closed), media-access grant list (which trainers may see this cohort's cohort-extended media).
 - **Enrollment** → links Intern ↔ Cohort ↔ Track ↔ Supervisor, outcome (in-progress/graduated/resigned/terminated).
-- **Contract** → trainer, cohort (required — a contract is always per-cohort), status (draft → sent → signed → active → released/discharged), file, media consent, release-requested flag.
+- **Contract** → trainer, cohort (required — a contract is always per-cohort), status (draft → sent → signed → active → released), file, media consent, release-requested flag.
 - **Module** → track, name, curriculum reference.
 - **Session** → module, trainer, cohort, scheduled date, status (scheduled/completed/rescheduled/cancelled), reminder status.
 - **Note** → session, trainer, content (prose write-up), slide deck, assignment, end-of-module assessment report (all file attachments).
@@ -110,10 +110,12 @@ The wizard's own per-step checks are a UX convenience only; `POST /api/register`
 
 Keep it simple: admin uploads the contract terms; the trainer downloads it, signs physically, scans, and uploads the signed copy. Trainer profile fields (occupation, organization, ID number, KRA PIN) are captured at self-registration (§6.2).
 
-Contract lifecycle: **Draft → Sent → Signed → Active → Released/Discharged**. Each single-step transition is checked against both access control (admin: any contract; trainer: only their own) and a role/from-state gate: Draft→Sent and Signed→Active and Active→Released are admin-only; Sent→Signed may be done by admin or the trainer themself. No other transition (skipping a step, moving backward) is permitted for anyone.
+Contract lifecycle: **Draft → Sent → Signed → Active → Released**. Each single-step transition is checked against both access control (admin: any contract; trainer: only their own) and a role/from-state gate: Draft→Sent and Signed→Active and Active→Released are admin-only; Sent→Signed may be done by admin or the trainer themself. No other transition (skipping a step, moving backward) is permitted for anyone.
 
-- **Who moves a contract to Released/Discharged:** admin-only. A trainer can set `releaseRequested` to flag/request completion, but that field alone never moves the status — admin makes the final transition.
+- **Who moves a contract to Released:** admin-only. A trainer can set `releaseRequested` to flag/request completion, but that field alone never moves the status — admin makes the final transition. Requesting release only makes sense once the engagement is actually underway, so `releaseRequested` can only be raised while the contract is Active.
+- **Signing requires the signed scan:** the Sent→Signed transition is rejected unless a contract `file` (the signed, scanned copy) is already attached — either uploaded in the same request or already on the contract — so "Signed" can't be claimed without the evidence it's meant to record.
 - A contract is always per-cohort — **not** auto-created at trainer self-registration (a trainer isn't tied to a cohort yet at that point, §6.2). Admin creates each `Contract` separately, once a cohort is lined up for that trainer; a trainer gets one contract per cohort they participate in.
+- **Trainer row-level access is scoped to their own part of the process:** a trainer can write their own contract's `file`, `mediaConsent` and `releaseRequested`, and move `status` from Sent to Signed — but never repoint which `trainer` or `cohort` the contract belongs to; those two fields stay admin-only to write, even on a contract the trainer otherwise owns.
 - **Per-session deliverables:** for each completed `Session`, the trainer submits a slide deck, a prose write-up of what was taught, the assignment given to interns, and an end-of-module assessment report — stored as `Note` attachments.
 - **End-of-module test:** a standard structure of 25 questions (15 multiple-choice, 5 true/false, 1 case study worth 5 structured questions) per module, marked by the trainer, with results visible to **Admin** and that module's **Trainer** per the Score visibility rule in §4.
 - **Session-count reference for invoicing:** since payment processing is out of scope (§3), the platform's job is only to give the trainer/admin an accurate count of completed sessions per cohort — the trainer still raises their own invoice against the agreed per-session rate outside the system.
@@ -185,7 +187,7 @@ This proposal was checked against the original pitch deck, the sample Drivers lo
 - "Mentor" (drivers logbook) rollup log → dropped, not built (§6.6).
 - Audit trail → scoped to the platform's built-in version history, not a compliance-grade log (§7, §10).
 - Status transitions (contract lifecycle, cohort-closing checklist) → enforced with plain validation logic, not a workflow engine (§6.1, §6.4, §10).
-- Contract release/discharge → admin-only (§6.4).
+- Contract release → admin-only (§6.4).
 - The pre/post driving-skills assessment → trainer-authored `Evaluation` records (§6.5).
 - Hosting → a persistent server process (§7, §10).
 - Google Drive export → dropped from v1 scope; Excel download only (§6.11).

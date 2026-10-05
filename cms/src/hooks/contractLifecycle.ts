@@ -4,7 +4,7 @@ import type { Contract } from '../payload-types'
 
 /**
  * §6.4: "Contract lifecycle state machine: Draft → Sent → Signed → Active →
- * Released/Discharged... Each transition is enforced with a straightforward
+ * Released... Each transition is enforced with a straightforward
  * validation check (which role may move it, and from which prior state)".
  *
  * Access control (src/access/roles.ts, wired into Contracts.ts) already
@@ -19,6 +19,15 @@ import type { Contract } from '../payload-types'
  * "A trainer can flag/request completion, but admin makes the final
  * transition" (§6.4, confirmed) is modeled as the separate
  * `releaseRequested` field, not as trainer write access to status itself.
+ * Requesting release only makes sense once the engagement is actually
+ * underway, so it's additionally gated on the contract already being
+ * Active.
+ *
+ * Two more checks below aren't single-step order/role checks, so they
+ * don't fit the TRANSITION_ROLES table: signing requires the trainer (or
+ * admin, on their behalf) to have actually uploaded the signed scan —
+ * otherwise "Signed" would just be an unsubstantiated claim — and
+ * `releaseRequested` can only be raised while the contract is Active.
  */
 
 type ContractStatus = Contract['status']
@@ -42,12 +51,27 @@ export const validateContractStatusTransition: CollectionBeforeChangeHook<Contra
   req,
 }) => {
   if (operation !== 'update' || !originalDoc) return data
-  if (!data.status || data.status === originalDoc.status) return data
 
   // No req.user means a trusted system-level call (a local-API script
   // running without a user, e.g. seeding/migration) — those intentionally
   // bypass both access control and this workflow gate.
   if (!req.user) return data
+
+  // `releaseRequested` isn't a status transition, so it's checked whether
+  // or not `status` is also changing in this same update.
+  if (data.releaseRequested && !originalDoc.releaseRequested) {
+    const effectiveStatus = data.status ?? originalDoc.status
+    if (effectiveStatus !== 'active') {
+      throw new APIError(
+        `Release can only be requested on an Active contract (currently "${effectiveStatus}").`,
+        400,
+        undefined,
+        true,
+      )
+    }
+  }
+
+  if (!data.status || data.status === originalDoc.status) return data
 
   const from = originalDoc.status
   const to = data.status
@@ -59,7 +83,7 @@ export const validateContractStatusTransition: CollectionBeforeChangeHook<Contra
     const reason =
       toIndex < fromIndex
         ? 'contracts cannot move backward'
-        : 'contracts must progress one step at a time (Draft → Sent → Signed → Active → Released/Discharged)'
+        : 'contracts must progress one step at a time (Draft → Sent → Signed → Active → Released)'
     throw new APIError(`Cannot move this contract from "${from}" to "${to}" — ${reason}.`, 400, undefined, true)
   }
 
@@ -67,6 +91,15 @@ export const validateContractStatusTransition: CollectionBeforeChangeHook<Contra
     throw new APIError(
       `Only ${allowedRoles.join(' or ')} may move a contract from "${from}" to "${to}".`,
       403,
+      undefined,
+      true,
+    )
+  }
+
+  if (to === 'signed' && !data.file && !originalDoc.file) {
+    throw new APIError(
+      'Cannot move this contract to "signed" without uploading the signed contract file first.',
+      400,
       undefined,
       true,
     )

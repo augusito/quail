@@ -1,11 +1,11 @@
 import type { CollectionConfig } from 'payload'
 
-import { adminOrRoleOwnsField, isAdmin } from '../access/roles'
+import { adminOnlyField, adminOrRoleOwnsField, isAdmin } from '../access/roles'
 import { validateContractStatusTransition } from '../hooks/contractLifecycle'
 
 // §6.4: admin uploads terms, trainer downloads/signs/scans/uploads back.
-// Lifecycle: Draft → Sent → Signed → Active → Released/Discharged, and only
-// admin may move a contract to Released/Discharged (confirmed).
+// Lifecycle: Draft → Sent → Signed → Active → Released, and only
+// admin may move a contract to Released (confirmed).
 //
 // Access control below grants trainers row-level read/write on their own
 // contract (§4 "Sign & manage own contract"); the beforeChange hook narrows
@@ -32,12 +32,21 @@ export const Contracts: CollectionConfig = {
       type: 'relationship',
       relationTo: 'users',
       required: true,
+      access: {
+        // Row-level access below grants a trainer write access to their own
+        // contract (to sign, upload, consent), but never to repoint which
+        // trainer or cohort it belongs to — that stays admin-only.
+        update: adminOnlyField,
+      },
     },
     {
       name: 'cohort',
       type: 'relationship',
       relationTo: 'cohorts',
       required: true,
+      access: {
+        update: adminOnlyField,
+      },
       admin: {
         description:
           "Trainers aren't tied to a cohort at invite time (§6.2) — each contract is created separately, per cohort the trainer participates in.",
@@ -53,7 +62,7 @@ export const Contracts: CollectionConfig = {
         { label: 'Sent', value: 'sent' },
         { label: 'Signed', value: 'signed' },
         { label: 'Active', value: 'active' },
-        { label: 'Released / Discharged', value: 'released' },
+        { label: 'Released', value: 'released' },
       ],
     },
     {
@@ -78,7 +87,7 @@ export const Contracts: CollectionConfig = {
       defaultValue: false,
       admin: {
         description:
-          '"A trainer can flag/request completion, but admin makes the final transition" (§6.4, confirmed). Setting this does not itself release the contract — admin still moves status to Released/Discharged.',
+          '"A trainer can flag/request completion, but admin makes the final transition" (§6.4, confirmed). Setting this does not itself release the contract — admin still moves status to Released.',
       },
     },
   ],

@@ -403,7 +403,7 @@ export interface Contract {
    */
   mediaConsent?: boolean | null;
   /**
-   * "A trainer can flag/request completion, but admin makes the final transition" (§6.4, confirmed). Setting this does not itself release the contract — admin still moves status to Released/Discharged.
+   * "A trainer can flag/request completion, but admin makes the final transition" (§6.4, confirmed). Setting this does not itself release the contract — admin still moves status to Released.
    */
   releaseRequested?: boolean | null;
   updatedAt: string;

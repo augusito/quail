@@ -50,7 +50,7 @@ export const validateCohortClosingChecklist: CollectionBeforeChangeHook<Cohort> 
   })
   if (unreleasedContracts.totalDocs > 0) {
     throw new APIError(
-      'Cannot close this cohort: not every trainer contract for this cohort has been released/discharged.',
+      'Cannot close this cohort: not every trainer contract for this cohort has been released.',
       400,
       undefined,
       true,

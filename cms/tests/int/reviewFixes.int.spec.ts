@@ -1,7 +1,12 @@
 // @vitest-environment node
+// This spec uploads a real file for the contract-signing test (see
+// beforeAll) — jsdom's polyfills interfere with `file-type`'s buffer
+// sniffing during upload validation, so this file opts into the plain Node
+// environment, same as tests/int/lifecycle.int.spec.ts.
 import { getPayload, Payload } from 'payload'
 import config from '@/payload.config'
 import type { User } from '@/payload-types'
+import sharp from 'sharp'
 
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 
@@ -12,6 +17,7 @@ type Seeded = {
   trainer: User
   otherTrainer: User
   intern: User
+  dummyFileId: number
 }
 
 let seeded: Seeded
@@ -44,7 +50,20 @@ describe('Review fixes: logbook read-only, contract row-level access, driving-sk
         data: { email: 'rf-intern@test.dev', password: 'test1234', role: 'intern' as const, status: 'active' as const },
       }),
     ])
-    seeded = { admin, trainer, otherTrainer, intern }
+
+    const pngBuffer = await sharp({
+      create: { width: 1, height: 1, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } },
+    })
+      .png()
+      .toBuffer()
+    const dummyFile = await payload.create({
+      collection: 'files',
+      data: {},
+      file: { data: pngBuffer, mimetype: 'image/png', name: 'test.png', size: pngBuffer.length },
+      overrideAccess: true,
+    })
+
+    seeded = { admin, trainer, otherTrainer, intern, dummyFileId: dummyFile.id }
   })
 
   // `seeded.intern`/`seeded.trainer` are shared across every test case
@@ -58,8 +77,11 @@ describe('Review fixes: logbook read-only, contract row-level access, driving-sk
 
   afterAll(async () => {
     if (!seeded) return
+    await payload.delete({ collection: 'files', id: seeded.dummyFileId, overrideAccess: true })
     await Promise.all(
-      Object.values(seeded).map((u) => payload.delete({ collection: 'users', id: u.id, overrideAccess: true })),
+      (['admin', 'trainer', 'otherTrainer', 'intern'] as const).map((key) =>
+        payload.delete({ collection: 'users', id: seeded[key].id, overrideAccess: true }),
+      ),
     )
   })
 
@@ -159,7 +181,7 @@ describe('Review fixes: logbook read-only, contract row-level access, driving-sk
       const signed = await payload.update({
         collection: 'contracts',
         id: contract.id,
-        data: { status: 'signed' },
+        data: { status: 'signed', file: seeded.dummyFileId },
         overrideAccess: false,
         user: seeded.trainer,
       })
