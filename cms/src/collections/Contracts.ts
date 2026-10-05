@@ -1,6 +1,6 @@
 import type { CollectionConfig } from 'payload'
 
-import { adminOrRoleOwnsField, isAdmin } from '../access/roles'
+import { adminOnlyField, adminOrRoleOwnsField, isAdmin } from '../access/roles'
 import { validateContractStatusTransition } from '../hooks/contractLifecycle'
 
 // §6.4: admin uploads terms, trainer downloads/signs/scans/uploads back.
@@ -32,12 +32,21 @@ export const Contracts: CollectionConfig = {
       type: 'relationship',
       relationTo: 'users',
       required: true,
+      access: {
+        // Row-level access below grants a trainer write access to their own
+        // contract (to sign, upload, consent), but never to repoint which
+        // trainer or cohort it belongs to — that stays admin-only.
+        update: adminOnlyField,
+      },
     },
     {
       name: 'cohort',
       type: 'relationship',
       relationTo: 'cohorts',
       required: true,
+      access: {
+        update: adminOnlyField,
+      },
       admin: {
         description:
           "Trainers aren't tied to a cohort at invite time (§6.2) — each contract is created separately, per cohort the trainer participates in.",

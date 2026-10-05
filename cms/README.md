@@ -251,7 +251,16 @@ the access control above:
   their signed scan back). Only admin may ever move a contract to
   Released/Discharged, matching the proposal's confirmed decision. A
   trainer "flagging/requesting completion" (§6.4) is the separate
-  `releaseRequested` checkbox — it doesn't itself change `status`.
+  `releaseRequested` checkbox — it doesn't itself change `status`, and the
+  hook only lets it be raised while the contract is Active (requesting
+  release before the engagement is even underway doesn't make sense). The
+  hook also rejects Sent→Signed unless a signed `file` is already attached
+  (uploaded in the same request or already on the document) — "Signed"
+  has to be backed by the actual scan, not just a status flip. Field-level
+  access on `Contracts.trainer`/`Contracts.cohort` (`src/collections/Contracts.ts`)
+  keeps a trainer's row-level write access to their own contract from
+  letting them repoint which trainer or cohort it belongs to — those two
+  fields stay admin-only regardless of row ownership.
 - **Cohort closing checklist** (`src/hooks/cohortClosingChecklist.ts`, on
   `Cohorts`) — blocks a transition to `closed` unless every
   still-in-progress enrollment in that cohort has at least one Evaluation

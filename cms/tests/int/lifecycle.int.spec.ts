@@ -105,7 +105,7 @@ describe('Contract lifecycle & cohort-closing guards (§6.1, §6.4)', () => {
       ).rejects.toThrow()
     })
 
-    it('a trainer may move their own contract from sent to signed, but not to active', async () => {
+    it('a trainer may move their own contract from sent to signed once they upload the file, but not to active', async () => {
       const cohort = await createCohort('Contract Test B')
       const contract = await payload.create({
         collection: 'contracts',
@@ -113,10 +113,21 @@ describe('Contract lifecycle & cohort-closing guards (§6.1, §6.4)', () => {
         overrideAccess: true,
       })
 
+      // No signed file uploaded yet — rejected even though the role/order are fine.
+      await expect(
+        payload.update({
+          collection: 'contracts',
+          id: contract.id,
+          data: { status: 'signed' },
+          overrideAccess: false,
+          user: seeded.trainer,
+        }),
+      ).rejects.toThrow()
+
       const signed = await payload.update({
         collection: 'contracts',
         id: contract.id,
-        data: { status: 'signed' },
+        data: { status: 'signed', file: seeded.dummyFileId },
         overrideAccess: false,
         user: seeded.trainer,
       })
@@ -131,6 +142,62 @@ describe('Contract lifecycle & cohort-closing guards (§6.1, §6.4)', () => {
           user: seeded.trainer,
         }),
       ).rejects.toThrow()
+    })
+
+    it('a trainer cannot reassign their own contract to a different trainer or cohort', async () => {
+      const cohort = await createCohort('Contract Test D')
+      const otherCohort = await createCohort('Contract Test D (other)')
+      const contract = await payload.create({
+        collection: 'contracts',
+        data: { trainer: seeded.trainer.id, cohort: cohort.id, status: 'draft' as const },
+        overrideAccess: true,
+      })
+
+      const unchanged = await payload.update({
+        collection: 'contracts',
+        id: contract.id,
+        data: { cohort: otherCohort.id, trainer: seeded.admin.id },
+        overrideAccess: false,
+        user: seeded.trainer,
+        depth: 0,
+      })
+      expect(unchanged.cohort).toBe(cohort.id)
+      expect(unchanged.trainer).toBe(seeded.trainer.id)
+    })
+
+    it('releaseRequested can only be raised once the contract is active', async () => {
+      const cohort = await createCohort('Contract Test E')
+      const contract = await payload.create({
+        collection: 'contracts',
+        data: { trainer: seeded.trainer.id, cohort: cohort.id, status: 'signed' as const, file: seeded.dummyFileId },
+        overrideAccess: true,
+      })
+
+      await expect(
+        payload.update({
+          collection: 'contracts',
+          id: contract.id,
+          data: { releaseRequested: true },
+          overrideAccess: false,
+          user: seeded.trainer,
+        }),
+      ).rejects.toThrow()
+
+      await payload.update({
+        collection: 'contracts',
+        id: contract.id,
+        data: { status: 'active' },
+        overrideAccess: true,
+      })
+
+      const requested = await payload.update({
+        collection: 'contracts',
+        id: contract.id,
+        data: { releaseRequested: true },
+        overrideAccess: false,
+        user: seeded.trainer,
+      })
+      expect(requested.releaseRequested).toBe(true)
     })
 
     it('only admin may release/discharge a contract, never the trainer', async () => {
