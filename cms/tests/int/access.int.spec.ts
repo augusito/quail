@@ -109,8 +109,16 @@ describe('Access control (§4 permissions matrix)', () => {
       data: { module: moduleA.id, trainer: seeded.trainerA.id, cohort: cohort.id, scheduledDate: '2026-02-01', status: 'scheduled' as const },
       overrideAccess: true,
     })
+    // internA must actually be enrolled in a cohort this trainer teaches
+    // moduleA in — owning the module alone isn't enough (see the
+    // isInternInTrainerModuleCohort test below for the gap this closes).
+    await payload.create({
+      collection: 'enrollments',
+      data: { intern: seeded.internA.id, cohort: cohort.id, track: 'ict' },
+      overrideAccess: true,
+    })
 
-    // Own module: allowed
+    // Own module, enrolled intern: allowed
     const ownScore = await payload.create({
       collection: 'scores',
       data: { intern: seeded.internA.id, module: moduleA.id, value: 90 },
@@ -124,6 +132,30 @@ describe('Access control (§4 permissions matrix)', () => {
       payload.create({
         collection: 'scores',
         data: { intern: seeded.internA.id, module: moduleB.id, value: 50 },
+        overrideAccess: false,
+        user: seeded.trainerA,
+      }),
+    ).rejects.toThrow()
+  })
+
+  it('a trainer cannot create a Score for an intern not enrolled in a cohort they teach the module in', async () => {
+    const cohort = await payload.create({
+      collection: 'cohorts',
+      data: { name: 'Cohort A2', tracks: ['ict' as const], startDate: '2026-01-01', endDate: '2026-06-01', status: 'open' as const },
+      overrideAccess: true,
+    })
+    const trainingModule = await payload.create({ collection: 'modules', data: { track: 'ict', name: 'Module A2' }, overrideAccess: true })
+    await payload.create({
+      collection: 'sessions',
+      data: { module: trainingModule.id, trainer: seeded.trainerA.id, cohort: cohort.id, scheduledDate: '2026-02-01', status: 'scheduled' as const },
+      overrideAccess: true,
+    })
+    // internB is never enrolled anywhere — owns no cohort this trainer
+    // teaches the module in.
+    await expect(
+      payload.create({
+        collection: 'scores',
+        data: { intern: seeded.internB.id, module: trainingModule.id, value: 90 },
         overrideAccess: false,
         user: seeded.trainerA,
       }),
