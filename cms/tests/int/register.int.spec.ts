@@ -74,13 +74,15 @@ describe('/api/register (§6.2 invite-link self-registration, proposal v2)', () 
       overrideAccess: true,
     })
     const inviteData: {
-      cohort: number
+      cohort?: number
       email: string
       role: 'intern' | 'trainer'
       status: 'sent'
       track?: 'business-management' | 'ict' | 'mechanics' | 'supply-chain' | 'truck-driving'
     } = {
-      cohort: cohort.id,
+      // §6.2: interns are enrolled into a specific cohort; trainers aren't
+      // tied to one at invite time.
+      cohort: role === 'intern' ? cohort.id : undefined,
       role,
       email: overrides.email ?? `invite-${Date.now()}-${Math.random()}@test.dev`,
       status: 'sent',
@@ -167,6 +169,23 @@ describe('/api/register (§6.2 invite-link self-registration, proposal v2)', () 
     await expect(
       payload.create({ collection: 'invites', data: badInviteData, overrideAccess: true }),
     ).rejects.toThrow()
+  })
+
+  it('requires a cohort for an intern invite but not for a trainer invite', async () => {
+    await expect(
+      payload.create({
+        collection: 'invites',
+        data: { role: 'intern', email: `no-cohort-${Date.now()}@test.dev`, status: 'sent', track: 'ict' },
+        overrideAccess: true,
+      }),
+    ).rejects.toThrow()
+
+    const trainerInvite = await payload.create({
+      collection: 'invites',
+      data: { role: 'trainer', email: `no-cohort-trainer-${Date.now()}@test.dev`, status: 'sent' },
+      overrideAccess: true,
+    })
+    expect(trainerInvite.cohort).toBeFalsy()
   })
 
   describe('GET /api/register?token= (invite lookup)', () => {
@@ -291,8 +310,8 @@ describe('/api/register (§6.2 invite-link self-registration, proposal v2)', () 
   })
 
   describe('trainer registration', () => {
-    it('registers a new trainer, creates their profile, and associates them with the cohort via a Draft contract', async () => {
-      const { cohort, invite } = await createInvite('trainer')
+    it('registers a new trainer, creates their profile, and a Draft contract with no cohort yet', async () => {
+      const { invite } = await createInvite('trainer')
 
       const response = await callRegister({ token: invite.token, ...trainerBody() })
       expect(response.status).toBe(201)
@@ -322,7 +341,7 @@ describe('/api/register (§6.2 invite-link self-registration, proposal v2)', () 
       })
       expect(contracts).toHaveLength(1)
       expect(contracts[0].status).toBe('draft')
-      expect(typeof contracts[0].cohort === 'object' ? contracts[0].cohort.id : contracts[0].cohort).toBe(cohort.id)
+      expect(contracts[0].cohort).toBeFalsy()
     })
 
     it('rejects a request missing required trainer fields', async () => {

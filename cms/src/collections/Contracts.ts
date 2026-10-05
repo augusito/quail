@@ -39,7 +39,10 @@ export const Contracts: CollectionConfig = {
       name: 'cohort',
       type: 'relationship',
       relationTo: 'cohorts',
-      required: true,
+      admin: {
+        description:
+          'Trainers are not tied to a cohort at invite time (§6.2) — admin picks the cohort here when preparing the contract.',
+      },
     },
     {
       name: 'status',
