@@ -326,7 +326,7 @@ Two routes at the same path, both public and unauthenticated:
   cohort-closing guards work, §6.1/§6.4/§10), then creates the User and
   the role-appropriate records on the registrant's behalf via
   `overrideAccess` (all otherwise admin-only):
-  - **intern** → an `Intern` profile row (name, DOB, gender, nationality,
+  - **intern** → an `Intern` profile row (name, DOB, nationality,
     contact, statutory numbers, next of kin) + an `Enrollment` in the
     invite's cohort/track, same as v1.
   - **trainer** → a `Trainer` profile row (name, occupation, contact,
@@ -336,7 +336,7 @@ Two routes at the same path, both public and unauthenticated:
     next step for admin (upload terms, move to Sent), and `Contract`
     already models trainer+cohort.
 
-  If any step after the User is created throws (e.g. a `gender`/`track`
+  If any step after the User is created throws (e.g. a `track`
   value that passes the endpoint's own presence check but not the
   target collection's own field validation), everything created so far
   — the profile row, the Enrollment/Contract — is
@@ -356,12 +356,12 @@ Two routes at the same path, both public and unauthenticated:
   ones return `400` naming which fields. On success the invite's
   `status` flips to `used`, so the same token can never register a
   second account. The rollback-on-partial-failure behavior above is
-  covered by a dedicated test — a bad `gender` value triggers it, and
+  covered by a dedicated test — a bad `dateOfBirth` value triggers it, and
   the test then confirms both that no orphaned User/Intern row remains
   and that the same invite successfully completes registration on
   retry — and verified against the real dev server the same way: a bad
-  `gender` returned `400` with no leftover user and the invite still
-  `sent`, and resubmitting with a valid `gender` on the same token then
+  `dateOfBirth` returned `400` with no leftover user and the invite still
+  `sent`, and resubmitting with a valid `dateOfBirth` on the same token then
   returned `201`.
 
 Admin reviews `status: pending` users and flips them to `active` through

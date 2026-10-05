@@ -72,7 +72,6 @@ export const exportRegistry: Partial<Record<CollectionSlug, ExportDefinition<unk
   interns: defineExport<Intern>('Interns', [
     { header: 'ID', get: (d) => d.id },
     { header: 'Name', get: (d) => d.name },
-    { header: 'Gender', get: (d) => d.gender },
     { header: 'Nationality', get: (d) => d.nationality },
     { header: 'Postal Address', get: (d) => d.address ?? '' },
     { header: 'Phone', get: (d) => d.phone },

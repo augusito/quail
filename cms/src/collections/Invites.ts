@@ -1,6 +1,6 @@
 import crypto from 'node:crypto'
 
-import type { CollectionConfig, Validate } from 'payload'
+import type { CollectionConfig, RelationshipFieldSingleValidation, Validate } from 'payload'
 import { validations } from 'payload'
 
 import { isAdmin } from '../access/roles'
@@ -35,6 +35,13 @@ const validateTrack: Validate<string | string[] | undefined, unknown, { role?: s
   >[1])
 }
 
+// Interns are enrolled into a specific cohort at invite time; trainers are
+// not tied to a cohort until admin prepares their contract later (§6.4).
+const validateCohort: Validate<number | string | undefined, unknown, { role?: string }> = (value, options) => {
+  if (options.siblingData?.role === 'intern' && !value) return 'Cohort is required for intern invites.'
+  return true
+}
+
 // §6.2 (proposal v2): "Both interns and trainers self-register, via an
 // invite link personalized to their email — admin enters the person's
 // email address (plus their role and cohort) to generate and send it,
@@ -46,8 +53,10 @@ const validateTrack: Validate<string | string[] | undefined, unknown, { role?: s
 // client never gets to supply it.
 //
 // `track` only makes sense for an intern invite (which track they're
-// auto-enrolled into) — a trainer invite just associates the trainer with
-// the cohort ahead of their contract (§6.4), no track involved.
+// auto-enrolled into). `cohort` is the same shape: interns are enrolled
+// into a specific cohort at invite time, but trainers are not tied to a
+// cohort at all — that association now happens later, when admin prepares
+// their contract (§6.4) and picks which cohort it's for.
 export const Invites: CollectionConfig = {
   slug: 'invites',
   admin: {
@@ -61,12 +70,6 @@ export const Invites: CollectionConfig = {
     delete: isAdmin,
   },
   fields: [
-    {
-      name: 'cohort',
-      type: 'relationship',
-      relationTo: 'cohorts',
-      required: true,
-    },
     {
       name: 'role',
       type: 'select',
@@ -82,6 +85,20 @@ export const Invites: CollectionConfig = {
       required: true,
       admin: {
         description: 'Only this address can complete registration with the resulting link (§6.2).',
+      },
+    },
+    {
+      name: 'cohort',
+      type: 'relationship',
+      relationTo: 'cohorts',
+      // Cast for the same reason as `track`'s `validate` above: this
+      // deliberately only reads `siblingData.role`, which doesn't
+      // structurally satisfy RelationshipFieldSingleValidation's broader
+      // `ValidateOptions`/value shape.
+      validate: validateCohort as unknown as RelationshipFieldSingleValidation,
+      admin: {
+        condition: (_, siblingData) => siblingData?.role === 'intern',
+        description: 'Which cohort this intern is enrolled into. Not used for trainer invites.',
       },
     },
     {
@@ -159,7 +176,7 @@ export const Invites: CollectionConfig = {
       ({ doc, operation, req }) => {
         if (operation !== 'create') return
         const baseUrl = process.env.PAYLOAD_PUBLIC_SERVER_URL || 'http://localhost:3000'
-        const cohortId = typeof doc.cohort === 'object' ? doc.cohort.id : doc.cohort
+        const cohortId = doc.cohort && typeof doc.cohort === 'object' ? doc.cohort.id : doc.cohort
         // Email integration not yet implemented (§6.2 asks for this to be
         // sent via email) — log the link so it's usable in the meantime.
         req.payload.logger.info(

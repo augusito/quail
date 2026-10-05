@@ -15,7 +15,7 @@ function getClientIp(req: { headers: Request['headers'] }): string {
 }
 
 type Invite = {
-  cohort: { id: number; name?: string } | number
+  cohort?: { id: number; name?: string } | number | null
   email: string
   expiresAt?: string | null
   id: number
@@ -98,7 +98,7 @@ const lookupEndpoint: Endpoint = {
     if ('error' in result) return result.error
     const { invite } = result
 
-    const cohortName = typeof invite.cohort === 'object' ? invite.cohort.name : undefined
+    const cohortName = typeof invite.cohort === 'object' ? invite.cohort?.name : undefined
     return Response.json({ role: invite.role, email: invite.email, cohortName, track: invite.track ?? null })
   },
 }
@@ -151,7 +151,7 @@ const submitEndpoint: Endpoint = {
     const { invite } = result
 
     const requiredByRole = invite.role === 'intern'
-      ? ['name', 'dateOfBirth', 'gender', 'nationality', 'phone', 'idNumber', 'kraPin', 'shifNumber', 'nssfNumber']
+      ? ['name', 'dateOfBirth', 'nationality', 'phone', 'idNumber', 'kraPin', 'shifNumber', 'nssfNumber']
       : ['name', 'occupation', 'phone', 'idNumber', 'kraPin']
     const missing = missingFields(body, requiredByRole)
 
@@ -182,10 +182,13 @@ const submitEndpoint: Endpoint = {
       return Response.json({ error: message }, { status: 400 })
     }
 
-    const cohortId = typeof invite.cohort === 'object' ? invite.cohort.id : invite.cohort
+    // Interns are enrolled into the cohort named on their invite; trainers
+    // aren't tied to a cohort at invite time (§6.2) — admin assigns one
+    // later when preparing their contract (§6.4).
+    const cohortId = typeof invite.cohort === 'object' ? invite.cohort?.id : invite.cohort
 
     // From here on, `user` already exists — if any later step throws (e.g.
-    // a bad `gender`/`track` value that isn't caught by the presence-only
+    // a bad `track` value that isn't caught by the presence-only
     // `missingFields` check above, but is by these collections' own field
     // validation), we must not leave an orphaned user sitting on an
     // otherwise-still-`sent` invite: retrying would immediately fail with
@@ -203,7 +206,6 @@ const submitEndpoint: Endpoint = {
             user: user.id,
             name: body.name as string,
             dateOfBirth: body.dateOfBirth as string,
-            gender: body.gender as 'female' | 'male' | 'other',
             nationality: body.nationality as string,
             address: typeof body.address === 'string' ? body.address : undefined,
             phone: body.phone as string,
@@ -228,7 +230,9 @@ const submitEndpoint: Endpoint = {
           collection: 'enrollments',
           data: {
             intern: user.id,
-            cohort: cohortId,
+            // Intern invites always carry a cohort (Invites.ts validates
+            // it's required for role 'intern').
+            cohort: cohortId as number,
             track: invite.track as
               | 'business-management'
               | 'ict'
@@ -258,17 +262,11 @@ const submitEndpoint: Endpoint = {
         })
         created.push({ collection: 'trainers', id: trainer.id })
 
-        // §6.2 "trainers are associated with that cohort ahead of their
-        // contract (§6.4)" — a Draft contract stub is the concrete form
-        // that association takes: it's the natural next step for admin
-        // (upload terms, move to Sent) and Contract already models
-        // trainer+cohort.
-        const contract = await req.payload.create({
-          collection: 'contracts',
-          data: { trainer: user.id, cohort: cohortId, status: 'draft' },
-          overrideAccess: true,
-        })
-        created.push({ collection: 'contracts', id: contract.id })
+        // §6.2: trainers aren't tied to a cohort at invite time, and a
+        // Contract always is (one per cohort the trainer participates
+        // in) — so there's no cohort to create a Draft stub against yet.
+        // Admin creates each Contract separately once a cohort is lined
+        // up for this trainer.
       }
     } catch (err) {
       await Promise.all(

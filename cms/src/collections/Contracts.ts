@@ -38,6 +38,10 @@ export const Contracts: CollectionConfig = {
       type: 'relationship',
       relationTo: 'cohorts',
       required: true,
+      admin: {
+        description:
+          "Trainers aren't tied to a cohort at invite time (§6.2) — each contract is created separately, per cohort the trainer participates in.",
+      },
     },
     {
       name: 'status',

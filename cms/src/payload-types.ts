@@ -238,7 +238,6 @@ export interface Intern {
    * Statutory/records purposes only — no minimum-age gate is enforced at registration (§6.2, confirmed not needed for v1).
    */
   dateOfBirth: string;
-  gender: 'female' | 'male' | 'other';
   nationality: string;
   address?: string | null;
   phone: string;
@@ -354,12 +353,15 @@ export interface Enrollment {
  */
 export interface Invite {
   id: number;
-  cohort: number | Cohort;
   role: 'intern' | 'trainer';
   /**
    * Only this address can complete registration with the resulting link (§6.2).
    */
   email: string;
+  /**
+   * Which cohort this intern is enrolled into. Not used for trainer invites.
+   */
+  cohort?: (number | null) | Cohort;
   /**
    * Which track this intern is auto-enrolled into. Not used for trainer invites.
    */
@@ -387,6 +389,9 @@ export interface Invite {
 export interface Contract {
   id: number;
   trainer: number | User;
+  /**
+   * Trainers aren't tied to a cohort at invite time (§6.2) — each contract is created separately, per cohort the trainer participates in.
+   */
   cohort: number | Cohort;
   status: 'draft' | 'sent' | 'signed' | 'active' | 'released';
   /**
@@ -911,7 +916,6 @@ export interface InternsSelect<T extends boolean = true> {
   user?: T;
   name?: T;
   dateOfBirth?: T;
-  gender?: T;
   nationality?: T;
   address?: T;
   phone?: T;
@@ -1000,9 +1004,9 @@ export interface EnrollmentsSelect<T extends boolean = true> {
  * via the `definition` "invites_select".
  */
 export interface InvitesSelect<T extends boolean = true> {
-  cohort?: T;
   role?: T;
   email?: T;
+  cohort?: T;
   track?: T;
   token?: T;
   expiresAt?: T;
