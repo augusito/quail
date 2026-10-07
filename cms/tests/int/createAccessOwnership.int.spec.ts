@@ -41,8 +41,8 @@ async function uploadDummyFile(payload: Payload) {
 // adminOrRoleOwnsField's doc comment (src/access/roles.ts): a `Where`
 // returned from a `create` access function is never merged into the
 // submitted `data` by Payload, so it behaves like `true` and never actually
-// checks the row names the caller as its owner. ModuleNotes, Documents,
-// Workplans, and AlumniProfiles all switched their `create` access to
+// checks the row names the caller as its owner. Note, Documents,
+// Workplans, and Alumna all switched their `create` access to
 // `adminOrRoleOwnsFieldOnCreate`, which checks `data[field] === user.id`
 // directly — these confirm each one now rejects a row naming someone else.
 describe('create access rejects naming someone else as the owner field', () => {
@@ -80,7 +80,7 @@ describe('create access rejects naming someone else as the owner field', () => {
     )
   })
 
-  it('a trainer cannot create a ModuleNote naming another trainer as the note-taker', async () => {
+  it('a trainer cannot create a Note naming another trainer as the note-taker', async () => {
     const cohort = await payload.create({
       collection: 'cohorts',
       data: { name: 'CAO Cohort', tracks: ['ict' as const], startDate: '2026-01-01', endDate: '2026-06-01', status: 'open' as const },
@@ -187,7 +187,7 @@ describe('create access rejects naming someone else as the owner field', () => {
     expect(ownWorkplan.id).toBeDefined()
   })
 
-  it('an intern cannot create an AlumniProfile naming another intern as its owner', async () => {
+  it('an intern cannot create an Alumna profile naming another intern as its owner', async () => {
     // Naming someone else: denied
     await expect(
       payload.create({

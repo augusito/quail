@@ -1,10 +1,9 @@
 # She Delivers Management System — CMS
 
 Payload CMS backend for the She Delivers cohort management system. See
-[`../she-delivers-proposal_2.md`](../she-delivers-proposal_2.md) for the
-full requirements this scaffold implements — a revision of the original
-[`../she-delivers-proposal.md`](../she-delivers-proposal.md); where this
-README says "the proposal" it means the current, revised one.
+[`../she-delivers-proposal.md`](../she-delivers-proposal.md) for the full
+requirements this scaffold implements; where this README says "the
+proposal" it means that file.
 
 ## Stack
 

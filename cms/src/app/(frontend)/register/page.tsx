@@ -45,7 +45,7 @@ const INTERN_PERSONAL_FIELDS: Field[] = [
 ]
 
 // National ID and KRA PIN apply to both roles; SHIF/NSSF only exist on the
-// Intern profile (src/collections/Interns.ts) — trainers have no equivalent.
+// Intern profile (src/collections/Intern.ts) — trainers have no equivalent.
 const TRAINER_IDENTIFICATION_FIELDS: Field[] = [
   { key: 'idNumber', label: 'ID Number', type: 'text', required: true },
   { key: 'kraPin', label: 'KRA PIN', type: 'text', required: true },
