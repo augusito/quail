@@ -1,6 +1,20 @@
-import type { CollectionConfig } from 'payload'
+import type { Access, CollectionConfig } from 'payload'
 
-import { adminOrRoleOwnsField, adminOrRoleOwnsFieldOnCreate, isAdmin } from '../access/roles'
+import { adminOrRoleOwnsField, hasRole, isAdmin } from '../access/roles'
+import { getSupervisedInternIds } from '../access/scoping'
+
+// Self-attributing `supervisor` isn't enough on its own — the named `intern`
+// must actually be one this supervisor is assigned to (Enrollment.supervisor),
+// the same cross-check Evaluations' standard-type branch already applies.
+// Without it, a supervisor could create a Workplan about any intern, not
+// just their own assigned ones.
+const createAccess: Access = async ({ req: { user, payload }, data }) => {
+  if (hasRole(user, 'admin')) return true
+  if (!hasRole(user, 'supervisor')) return false
+  if (data?.supervisor !== user!.id || data?.intern === undefined) return false
+  const internIds = await getSupervisedInternIds(payload, user!.id)
+  return internIds.some((id) => id === data.intern)
+}
 
 // §4 "Submit workplans & evaluations": Supervisor only (own). Not granted
 // to interns in the matrix, even though the workplan is about them.
@@ -11,7 +25,7 @@ export const Workplans: CollectionConfig = {
     defaultColumns: ['supervisor', 'intern', 'cohort'],
   },
   access: {
-    create: adminOrRoleOwnsFieldOnCreate('supervisor', 'supervisor'),
+    create: createAccess,
     read: adminOrRoleOwnsField('supervisor', 'supervisor'),
     update: adminOrRoleOwnsField('supervisor', 'supervisor'),
     delete: isAdmin,

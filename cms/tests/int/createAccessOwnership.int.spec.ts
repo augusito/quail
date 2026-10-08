@@ -41,10 +41,12 @@ async function uploadDummyFile(payload: Payload) {
 // adminOrRoleOwnsField's doc comment (src/access/roles.ts): a `Where`
 // returned from a `create` access function is never merged into the
 // submitted `data` by Payload, so it behaves like `true` and never actually
-// checks the row names the caller as its owner. Note, Documents,
-// Workplans, and Alumna all switched their `create` access to
-// `adminOrRoleOwnsFieldOnCreate`, which checks `data[field] === user.id`
-// directly — these confirm each one now rejects a row naming someone else.
+// checks the row names the caller as its owner. Note, Documents, and Alumna
+// switched their `create` access to `adminOrRoleOwnsFieldOnCreate`, which
+// checks `data[field] === user.id` directly; Workplans has a bespoke
+// createAccess that additionally cross-checks the named intern is actually
+// assigned to the calling supervisor (src/collections/Workplans.ts) — these
+// confirm each one now rejects a row naming someone else as its owner.
 describe('create access rejects naming someone else as the owner field', () => {
   beforeAll(async () => {
     const payloadConfig = await config
@@ -67,6 +69,7 @@ describe('create access rejects naming someone else as the owner field', () => {
       'notes',
       'documents',
       'workplans',
+      'enrollments',
       'alumnae',
       'files',
       'sessions',
@@ -166,8 +169,16 @@ describe('create access rejects naming someone else as the owner field', () => {
       data: { name: 'CAO Workplan Cohort', tracks: ['ict' as const], startDate: '2026-01-01', endDate: '2026-06-01', status: 'open' as const },
       overrideAccess: true,
     })
+    // internA is assigned to supervisorA; internB is not assigned to either
+    // supervisor — needed below to also cover the related-intern cross-check,
+    // not just the self-attribution check.
+    await payload.create({
+      collection: 'enrollments',
+      data: { intern: seeded.internA.id, cohort: cohort.id, supervisor: seeded.supervisorA.id, track: 'ict' as const },
+      overrideAccess: true,
+    })
 
-    // Naming someone else: denied
+    // Naming someone else as supervisor: denied
     await expect(
       payload.create({
         collection: 'workplans',
@@ -177,7 +188,17 @@ describe('create access rejects naming someone else as the owner field', () => {
       }),
     ).rejects.toThrow()
 
-    // Naming themselves: still allowed
+    // Naming themselves but about an intern they don't supervise: denied
+    await expect(
+      payload.create({
+        collection: 'workplans',
+        data: { supervisor: seeded.supervisorA.id, intern: seeded.internB.id, cohort: cohort.id },
+        overrideAccess: false,
+        user: seeded.supervisorA,
+      }),
+    ).rejects.toThrow()
+
+    // Naming themselves about their own assigned intern: still allowed
     const ownWorkplan = await payload.create({
       collection: 'workplans',
       data: { supervisor: seeded.supervisorA.id, intern: seeded.internA.id, cohort: cohort.id },
