@@ -10,11 +10,25 @@ import type { Payload } from 'payload'
 
 type ID = number | string
 
-/** Enrollment.supervisor (added for this) is how "assigned interns" is modeled. */
-export async function getSupervisedInternIds(payload: Payload, supervisorId: ID): Promise<ID[]> {
+/**
+ * Enrollment.supervisor is how "assigned interns" is modeled. Enrollment is
+ * per-cohort, so an unscoped call returns every intern this supervisor has
+ * ever been assigned to, across cohorts — fine for a read/update filter
+ * where there's no specific cohort to check against (Users.ts, Logbook.ts),
+ * but a create check that also names a `cohort` (Workplans.ts, Evaluations.ts)
+ * must pass `cohortId` too, or it'll accept a cohort the supervisor was
+ * never assigned to this intern in.
+ */
+export async function getSupervisedInternIds(
+  payload: Payload,
+  supervisorId: ID,
+  cohortId?: ID,
+): Promise<ID[]> {
   const { docs } = await payload.find({
     collection: 'enrollments',
-    where: { supervisor: { equals: supervisorId } },
+    where: cohortId
+      ? { and: [{ supervisor: { equals: supervisorId } }, { cohort: { equals: cohortId } }] }
+      : { supervisor: { equals: supervisorId } },
     limit: 0,
     depth: 0,
     overrideAccess: true,

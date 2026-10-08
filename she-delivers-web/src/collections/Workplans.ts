@@ -4,15 +4,16 @@ import { adminOrRoleOwnsField, hasRole, isAdmin } from '../access/roles'
 import { getSupervisedInternIds } from '../access/scoping'
 
 // Self-attributing `supervisor` isn't enough on its own — the named `intern`
-// must actually be one this supervisor is assigned to (Enrollment.supervisor),
-// the same cross-check Evaluations' standard-type branch already applies.
-// Without it, a supervisor could create a Workplan about any intern, not
-// just their own assigned ones.
+// must actually be one this supervisor is assigned to, in the named
+// `cohort` specifically (Enrollment.supervisor is per-cohort), the same
+// cross-check Evaluations' standard-type branch already applies. Without
+// the cohort check too, a supervisor could create a Workplan for an intern
+// they supervised in a different cohort, under a different enrollment.
 const createAccess: Access = async ({ req: { user, payload }, data }) => {
   if (hasRole(user, 'admin')) return true
   if (!hasRole(user, 'supervisor')) return false
-  if (data?.supervisor !== user!.id || data?.intern === undefined) return false
-  const internIds = await getSupervisedInternIds(payload, user!.id)
+  if (data?.supervisor !== user!.id || data?.intern === undefined || data?.cohort === undefined) return false
+  const internIds = await getSupervisedInternIds(payload, user!.id, data.cohort)
   return internIds.some((id) => id === data.intern)
 }
 
