@@ -550,6 +550,32 @@ What's left is narrower refinement, not missing features — the
 "Not modeled" note under Invite-link registration (rate-limiting's
 current in-memory, single-instance-only state).
 
+## Known limitations
+
+Worth knowing before picking this up:
+
+- **Invite emails are logged, not sent.** `Invites.ts`'s `afterChange` hook
+  logs the registration link via `req.payload.logger.info` instead of
+  emailing it — an admin currently has to copy the link out of the server
+  log and send it manually. `src/email/adapter.ts` already wires up
+  nodemailer for session reminders, so sending invite emails the same way
+  is a small follow-up, not a redesign.
+- **No custom Payload admin dashboard.** Admin users work entirely in
+  Payload's stock generated UI; there's no bespoke dashboard view.
+- **`npm run test:e2e` doesn't run in every environment.** Playwright
+  needs a locally resolvable Chromium binary; some cloud sandboxes don't
+  have one on the expected path, so e2e can fail there with a browser-launch
+  error even though the suite itself is fine (CI runs it successfully via
+  `npx playwright install --with-deps chromium`).
+- **`/api/register` rate-limiting is in-memory and single-instance only**
+  (see the "Not modeled" note under Invite-link registration above) — it
+  won't hold a limit across multiple server instances behind a load
+  balancer.
+- **The `Dockerfile` is unexercised in any real deployment** — there is no
+  production environment yet. It builds (verified with `npm run build` +
+  `next.config.ts`'s `output: 'standalone'`), but nobody has run the
+  resulting image against a real Postgres instance.
+
 ## Testing
 
 ```bash
