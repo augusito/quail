@@ -78,7 +78,8 @@ export const Contracts: CollectionConfig = {
       type: 'checkbox',
       defaultValue: false,
       admin: {
-        description: 'Standing media-release consent from the Trainers Agreement (name/photo/video usable in promotional material).',
+        description:
+          'Standing media-release consent from the Trainers Agreement (name/photo/video usable in promotional material).',
       },
     },
     {
@@ -87,7 +88,7 @@ export const Contracts: CollectionConfig = {
       defaultValue: false,
       admin: {
         description:
-          'A trainer can flag/request completion, but admin makes the final transition. Setting this does not itself release the contract — admin still moves status to Released.',
+          "Trainer-set flag requesting release; checking it doesn't release the contract, only admin moving status to Released does.",
       },
     },
   ],

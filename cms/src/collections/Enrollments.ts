@@ -46,7 +46,7 @@ export const Enrollments: CollectionConfig = {
       type: 'relationship',
       relationTo: 'users',
       admin: {
-        description: 'Assigned supervisor/"Mentor" for this intern — drives the "assigned interns" access scoping.',
+        description: 'Assigned supervisor ("Mentor") for this intern; determines which interns a supervisor can access.',
       },
     },
     {
