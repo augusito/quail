@@ -33,13 +33,13 @@ const updateAccess: Access = async ({ req: { user, payload } }) => {
   return { module: { in: moduleIds } }
 }
 
-// §6.5: once a module completes and its score is finalized, the intern can
-// see that module's score immediately, rather than waiting for cohort end.
-// §4 "View scores" / "Post module notes/scores": Admin (all), Trainer (own
+// Once a module completes and its score is finalized, the intern can see
+// that module's score immediately, rather than waiting for cohort end.
+// "View scores" / "Post module notes/scores": Admin (all), Trainer (own
 // modules only — Module has no `trainer` field, so "own modules" is derived
-// from Session.trainer via getTrainerModuleIds, per §10's
-// "trainer may read Scores only where the module's trainer is themself"),
-// Intern (own, and only once finalized).
+// from Session.trainer via getTrainerModuleIds, so a trainer may read
+// Scores only where the module's trainer is themself), Intern (own, and
+// only once finalized).
 export const Scores: CollectionConfig = {
   slug: 'scores',
   admin: {
@@ -79,7 +79,7 @@ export const Scores: CollectionConfig = {
       type: 'checkbox',
       defaultValue: false,
       admin: {
-        description: 'Controls whether the intern can see this score yet (§6.5).',
+        description: 'Controls whether the intern can see this score yet.',
       },
     },
   ],

@@ -3,17 +3,15 @@ import type { CollectionSlug, Endpoint, Where } from 'payload'
 import { buildWorkbookBuffer } from '../exports/buildWorkbook'
 import { exportRegistry } from '../exports/registry'
 
-// §6.11 "Confirmed export destination for v1: a straight Excel download."
-// §4 "Bulk export": Admin only. GET /api/export/:collection — the
-// collection admin-only check happens here explicitly (not just via each
-// collection's own access config) because this reads with
-// overrideAccess: true to get the full picture for a report, bypassing
-// row-level scoping like "trainer sees only their own contracts" that
-// would otherwise make the export incomplete.
+// Bulk export is admin only. GET /api/export/:collection — the collection
+// admin-only check happens here explicitly (not just via each collection's
+// own access config) because this reads with overrideAccess: true to get
+// the full picture for a report, bypassing row-level scoping like "trainer
+// sees only their own contracts" that would otherwise make the export
+// incomplete.
 //
 // Optional ?cohort=<id> narrows to that cohort, for collections that carry
-// a cohort field — e.g. exporting one cohort's roster before closing it
-// (§6.1's closing checklist).
+// a cohort field — e.g. exporting one cohort's roster before closing it.
 const COHORT_FILTERABLE: CollectionSlug[] = [
   'enrollments',
   'contracts',

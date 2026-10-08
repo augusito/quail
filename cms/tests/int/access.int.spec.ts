@@ -17,7 +17,7 @@ type Seeded = {
 
 let seeded: Seeded
 
-describe('Access control (§4 permissions matrix)', () => {
+describe('Access control permissions matrix', () => {
   beforeAll(async () => {
     const payloadConfig = await config
     payload = await getPayload({ config: payloadConfig })

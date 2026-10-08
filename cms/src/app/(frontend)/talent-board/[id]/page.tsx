@@ -5,7 +5,7 @@ import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { PageShell } from '../../components/PageShell'
 
-// §6.9: public fields are photo, name, courses, work experience, and a
+// Public fields are photo, name, courses, work experience, and a
 // narrative bio; email/phone are shown only when the alum chose to
 // include them (each optional per listing). No messaging UI — employers
 // contact admin, who acts as the intermediary.

@@ -16,7 +16,7 @@ type Seeded = {
 
 let seeded: Seeded
 
-describe('Session reminders (§6.3)', () => {
+describe('Session reminders', () => {
   beforeAll(async () => {
     const payloadConfig = await config
     payload = await getPayload({ config: payloadConfig })

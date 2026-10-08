@@ -1,5 +1,5 @@
-// §5/§6.2 (proposal v2): Trainer and Intern profile collections. Access
-// control mirrors §4's "Register/manage own profile": admin sees/edits everything,
+// Trainer and Intern profile collections. Access control mirrors
+// "Register/manage own profile": admin sees/edits everything,
 // everyone else only their own row. `user` is unique on both collections
 // (one profile per account), so each seeded user's profile is created once
 // in beforeAll and reused read-only across tests, rather than re-created
@@ -28,7 +28,7 @@ let trainerProfileB: Trainer
 let internProfileA: Intern
 let internProfileB: Intern
 
-describe('Trainer / Intern access control (§4, §5, §6.2)', () => {
+describe('Trainer / Intern access control', () => {
   beforeAll(async () => {
     const payloadConfig = await config
     payload = await getPayload({ config: payloadConfig })

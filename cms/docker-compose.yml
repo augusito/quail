@@ -15,8 +15,8 @@ services:
     env_file:
       - .env
 
-  # Local Postgres for testing against the production adapter (proposal §7,
-  # §10). DATABASE_URL should use 'postgres' as the hostname, e.g.
+  # Local Postgres for testing against the production adapter.
+  # DATABASE_URL should use 'postgres' as the hostname, e.g.
   # postgres://postgres:postgres@postgres:5432/she-delivers
   postgres:
     restart: always

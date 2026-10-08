@@ -20,9 +20,9 @@ const updateAccess: Access = ({ req: { user }, id }): AccessResult => {
   return user.id === id
 }
 
-// Roles per proposal §4. Program Director/Consultant/Coordinator job titles
-// all map to the Admin role — no separate tier for them. "Public" is not a
-// user role; it describes unauthenticated access to the Talent Board (§6.9).
+// Program Director/Consultant/Coordinator job titles all map to the Admin
+// role — no separate tier for them. "Public" is not a user role; it
+// describes unauthenticated access to the Talent Board.
 export const Users: CollectionConfig = {
   slug: 'users',
   admin: {
@@ -30,7 +30,7 @@ export const Users: CollectionConfig = {
     defaultColumns: ['email', 'role', 'status'],
   },
   access: {
-    // §6.2 self-registration goes through POST /api/register
+    // Self-registration goes through POST /api/register
     // (src/endpoints/register.ts), which uses overrideAccess to create the
     // user on the registrant's behalf — hardcoding role: intern and
     // status: pending, never trusting client input for either. Direct
@@ -77,7 +77,7 @@ export const Users: CollectionConfig = {
       },
       admin: {
         description:
-          '"pending" is set automatically for §6.2 self-registrations, awaiting admin review (target 24h turnaround). Admin-created accounts default to "active".',
+          '"pending" is set automatically for self-registrations, awaiting admin review (target 24h turnaround). Admin-created accounts default to "active".',
       },
       options: [
         { label: 'Active', value: 'active' },

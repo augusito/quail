@@ -16,8 +16,8 @@ const createAccess: Access = async ({ req: { user, payload }, data }) => {
   return internIds.some((id) => id === data.intern)
 }
 
-// §4 "Submit workplans & evaluations": Supervisor only (own). Not granted
-// to interns in the matrix, even though the workplan is about them.
+// "Submit workplans & evaluations": Supervisor only (own). Not granted
+// to interns, even though the workplan is about them.
 export const Workplans: CollectionConfig = {
   slug: 'workplans',
   admin: {

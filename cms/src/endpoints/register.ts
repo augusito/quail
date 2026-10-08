@@ -25,12 +25,12 @@ type Invite = {
 }
 
 /**
- * Shared by both routes below: looks up the invite by token and applies
- * §6.2's "expire 24 hours after issue, or can be revoked at admin's
- * discretion" rule. An invite found past its expiry while still `sent` is
- * lazily flipped to `expired` here (rather than via a cron) — same "plain
- * validation logic, no workflow engine" approach as the contract-lifecycle
- * and cohort-closing guards (§6.1, §6.4, §10).
+ * Shared by both routes below: looks up the invite by token and applies the
+ * rule that an invite expires 24 hours after issue, or can be revoked at
+ * admin's discretion. An invite found past its expiry while still `sent` is
+ * lazily flipped to `expired` here (rather than via a cron) — same plain
+ * validation-logic approach as the contract-lifecycle and cohort-closing
+ * guards.
  */
 async function resolveInvite(
   payload: import('payload').BasePayload,
@@ -104,11 +104,11 @@ const lookupEndpoint: Endpoint = {
 }
 
 /**
- * §6.2 self-registration (proposal v2): "Both interns and trainers
- * self-register, via an invite link personalized to their email... Only
- * that email address can complete registration with it." This is the
- * public, unauthenticated counterpart to the admin-only Invites
- * collection. A client posts the invite token plus their profile details;
+ * Self-registration: both interns and trainers self-register, via an
+ * invite link personalized to their email, and only that email address can
+ * complete registration with it. This is the public, unauthenticated
+ * counterpart to the admin-only Invites collection. A client posts the
+ * invite token plus their profile details;
  * this validates the invite (exists, not used/revoked/expired) and —
  * only then — creates the User plus the role-appropriate profile
  * (Intern + Enrollment, or Trainer + a Draft Contract)
@@ -183,8 +183,8 @@ const submitEndpoint: Endpoint = {
     }
 
     // Interns are enrolled into the cohort named on their invite; trainers
-    // aren't tied to a cohort at invite time (§6.2) — admin assigns one
-    // later when preparing their contract (§6.4).
+    // aren't tied to a cohort at invite time — admin assigns one later when
+    // preparing their contract.
     const cohortId = typeof invite.cohort === 'object' ? invite.cohort?.id : invite.cohort
 
     // From here on, `user` already exists — if any later step throws (e.g.
@@ -262,11 +262,11 @@ const submitEndpoint: Endpoint = {
         })
         created.push({ collection: 'trainers', id: trainer.id })
 
-        // §6.2: trainers aren't tied to a cohort at invite time, and a
-        // Contract always is (one per cohort the trainer participates
-        // in) — so there's no cohort to create a Draft stub against yet.
-        // Admin creates each Contract separately once a cohort is lined
-        // up for this trainer.
+        // Trainers aren't tied to a cohort at invite time, and a Contract
+        // always is (one per cohort the trainer participates in) — so
+        // there's no cohort to create a Draft stub against yet. Admin
+        // creates each Contract separately once a cohort is lined up for
+        // this trainer.
       }
     } catch (err) {
       await Promise.all(

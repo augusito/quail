@@ -29,12 +29,11 @@ export const resetReminderStatusOnReschedule: CollectionBeforeChangeHook<Session
 }
 
 /**
- * §6.3: queues the "sendSessionReminder" job (src/jobs/sendSessionReminder.ts)
- * for 2 hours before a session's scheduledDate, and — "a trainer can
- * reschedule after interns are already notified, and that should trigger
- * an automatic re-notification" — queues an immediate "rescheduled" email
- * too when a reschedule happens after the original reminder already went
- * out.
+ * Queues the "sendSessionReminder" job (src/jobs/sendSessionReminder.ts) for
+ * 2 hours before a session's scheduledDate. A trainer can reschedule after
+ * interns are already notified, so this also queues an immediate
+ * "rescheduled" email when a reschedule happens after the original reminder
+ * already went out.
  *
  * Queues (rather than sends inline) so a slow email provider never blocks
  * the request that created/rescheduled the session, and so retries are

@@ -6,14 +6,14 @@ export type Role = User['role']
 
 /**
  * Global principle (documented once here rather than per collection):
- * Admin is the platform superuser and always has full CRUD access,
- * regardless of whether a given §4 matrix row's Admin cell says "submit"
- * or not — those cells describe who normally originates a workflow action
- * (e.g. a Supervisor submits an evaluation), not a restriction on Admin's
- * oversight. Program Director/Consultant/Coordinator job titles map to
- * Admin (§4 role mapping decisions), so this also covers their need for
- * full visibility. Every other role gets exactly what §4 grants them;
- * anything the matrix doesn't mention is denied by default.
+ * Admin is the platform superuser and always has full CRUD access, even
+ * where a workflow action is normally originated by another role (e.g. a
+ * Supervisor submits an evaluation) — that describes who normally
+ * originates the action, not a restriction on Admin's oversight. Program
+ * Director/Consultant/Coordinator job titles all map to Admin, so this
+ * also covers their need for full visibility. Every other role gets
+ * exactly what its access rules grant it; anything not explicitly granted
+ * is denied by default.
  */
 
 export const hasRole = (user: User | null | undefined, ...roles: Role[]): boolean =>

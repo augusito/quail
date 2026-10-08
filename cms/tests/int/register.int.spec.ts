@@ -11,7 +11,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 let payload: Payload
 let payloadConfig: Awaited<typeof config>
 
-describe('/api/register (§6.2 invite-link self-registration, proposal v2)', () => {
+describe('/api/register (invite-link self-registration)', () => {
   beforeAll(async () => {
     payloadConfig = await config
     payload = await getPayload({ config: payloadConfig })
@@ -80,7 +80,7 @@ describe('/api/register (§6.2 invite-link self-registration, proposal v2)', () 
       status: 'sent'
       track?: 'business-management' | 'ict' | 'mechanics' | 'supply-chain' | 'truck-driving'
     } = {
-      // §6.2: interns are enrolled into a specific cohort; trainers aren't
+      // Interns are enrolled into a specific cohort; trainers aren't
       // tied to one at invite time.
       cohort: role === 'intern' ? cohort.id : undefined,
       role,
@@ -402,7 +402,7 @@ describe('/api/register (§6.2 invite-link self-registration, proposal v2)', () 
     expect(response.status).toBe(400)
   })
 
-  it('blocks login while pending, then allows it once admin approves (§6.2 approval flow)', async () => {
+  it('blocks login while pending, then allows it once admin approves', async () => {
     const { invite } = await createInvite('intern')
 
     const registerResponse = await callRegister({ token: invite.token, ...internBody() })

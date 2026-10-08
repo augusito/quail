@@ -3,26 +3,24 @@ import { APIError, type CollectionBeforeChangeHook } from 'payload'
 import type { Cohort } from '../payload-types'
 
 /**
- * §6.1: "Closing a cohort should be a deliberate, admin-confirmed action
- * (not automatic on end-date) with a checklist: all evaluations submitted,
+ * Closing a cohort should be a deliberate, admin-confirmed action (not
+ * automatic on end-date), gated on a checklist: all evaluations submitted,
  * all documents verified, all contracts released — before interns migrate
- * to Alumni Hub... enforced with a straightforward validation check before
- * the status change to 'closed' is saved — plain guard logic."
+ * to Alumni Hub.
  *
  * Access control already restricts Cohorts.update to admin only, so the
- * "admin-confirmed" half of that sentence is covered elsewhere; this hook
- * is the checklist itself. Only enrollments still `in-progress` are
- * checked — a cohort's already-graduated/resigned/terminated interns don't
- * block closing.
+ * "admin-confirmed" half of that is covered elsewhere; this hook is the
+ * checklist itself. Only enrollments still `in-progress` are checked — a
+ * cohort's already-graduated/resigned/terminated interns don't block
+ * closing.
  *
- * Documents and Evaluations aren't precisely scoped to "for this cohort"
- * by the proposal (Document has no cohort field at all — it's a standing
- * per-intern compliance record; Evaluation does have one). This
- * implements the most literal reading: every still-in-progress intern in
- * this cohort needs at least one Evaluation tied to this cohort, and no
- * outstanding (pending/rejected) Document. It does not check evaluations
- * are complete *per track* (e.g. both driving-skills checkpoints for a
- * driver-track intern) — flagged as a possible refinement.
+ * Document has no cohort field at all — it's a standing per-intern
+ * compliance record, while Evaluation does have one. This implements the
+ * most literal reading: every still-in-progress intern in this cohort
+ * needs at least one Evaluation tied to this cohort, and no outstanding
+ * (pending/rejected) Document. It does not check evaluations are complete
+ * *per track* (e.g. both driving-skills checkpoints for a driver-track
+ * intern) — flagged as a possible refinement.
  */
 export const validateCohortClosingChecklist: CollectionBeforeChangeHook<Cohort> = async ({
   data,

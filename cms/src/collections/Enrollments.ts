@@ -10,10 +10,10 @@ const readAccess: Access = ({ req: { user } }): AccessResult => {
   return false
 }
 
-// Links Intern ↔ Cohort ↔ Track (§5). outcome captures the §6.1
-// non-completion paths: Termination (account closed, no Alumni Hub) vs.
-// Resignation (moves to Alumni Hub, flagged separately from graduates so
-// Talent Board eligibility can be limited to actual graduates).
+// Links Intern ↔ Cohort ↔ Track. outcome captures the non-completion
+// paths: Termination (account closed, no Alumni Hub) vs. Resignation
+// (moves to Alumni Hub, flagged separately from graduates so Talent Board
+// eligibility can be limited to actual graduates).
 export const Enrollments: CollectionConfig = {
   slug: 'enrollments',
   admin: {
@@ -46,7 +46,7 @@ export const Enrollments: CollectionConfig = {
       type: 'relationship',
       relationTo: 'users',
       admin: {
-        description: 'Assigned supervisor/"Mentor" for this intern — drives the §4/§6.6/§6.8 "assigned interns" access scoping.',
+        description: 'Assigned supervisor/"Mentor" for this intern — drives the "assigned interns" access scoping.',
       },
     },
     {

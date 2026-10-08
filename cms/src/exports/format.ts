@@ -1,4 +1,4 @@
-// Shared cell-formatting helpers for the §6.11 Excel exports (src/exports/registry.ts).
+// Shared cell-formatting helpers for the Excel exports (src/exports/registry.ts).
 // Collections are queried at depth: 1, so relationship fields arrive as
 // either a populated object or an unpopulated id/null — these normalize
 // both cases into something readable in a spreadsheet cell.

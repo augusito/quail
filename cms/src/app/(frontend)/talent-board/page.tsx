@@ -5,11 +5,11 @@ import type { Where } from 'payload'
 import config from '@/payload.config'
 import { PageShell } from '../components/PageShell'
 
-// §6.9 public Talent Board — view-only. Fetched with overrideAccess:
-// false and user: null so this page renders exactly what an anonymous
-// visitor's own API request would see: opted-in AND graduated profiles
-// only (readAccess in src/collections/Alumna.ts), same as
-// everyone else — nothing here bypasses that.
+// Public Talent Board — view-only. Fetched with overrideAccess: false and
+// user: null so this page renders exactly what an anonymous visitor's own
+// API request would see: opted-in AND graduated profiles only (readAccess
+// in src/collections/Alumna.ts), same as everyone else — nothing here
+// bypasses that.
 export default async function TalentBoardPage({
   searchParams,
 }: {

@@ -10,12 +10,11 @@ const readAccess: Access = async ({ req: { user, payload } }) => {
   return alumniInternIds.includes(user.id)
 }
 
-// §4 "Alumni Hub announcements": Admin only (authoring). Read is scoped to
-// admin plus actual Alumni Hub members — graduated or resigned interns
-// (§6.1: "both still share the same Alumni Hub access") — via
-// getAlumniInternIds, rather than any authenticated user. A
-// still-in-progress intern, trainer, or supervisor has no Alumni Hub to
-// read announcements in.
+// "Alumni Hub announcements": Admin only (authoring). Read is scoped to
+// admin plus actual Alumni Hub members — graduated or resigned interns,
+// who both share the same Alumni Hub access — via getAlumniInternIds,
+// rather than any authenticated user. A still-in-progress intern, trainer,
+// or supervisor has no Alumni Hub to read announcements in.
 export const Announcements: CollectionConfig = {
   slug: 'announcements',
   admin: {

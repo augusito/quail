@@ -34,10 +34,10 @@ import { sendSessionReminderTask } from './jobs/sendSessionReminder'
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 
-// Postgres is the production adapter (§7, §10 of the proposal). SQLite is used
-// for local development and tests so contributors don't need a Postgres
-// instance running. Select via PAYLOAD_DATABASE=postgres|sqlite (defaults to
-// sqlite outside of production).
+// Postgres is the production adapter. SQLite is used for local development
+// and tests so contributors don't need a Postgres instance running. Select
+// via PAYLOAD_DATABASE=postgres|sqlite (defaults to sqlite outside of
+// production).
 const databaseAdapter =
   process.env.PAYLOAD_DATABASE === 'postgres' ||
   (process.env.PAYLOAD_DATABASE !== 'sqlite' && process.env.NODE_ENV === 'production')
@@ -88,12 +88,12 @@ export default buildConfig({
   editor: lexicalEditor(),
   email: emailAdapter,
   endpoints: [...registerEndpoints, exportCollectionEndpoint],
-  // §6.3 reminders run on Payload's built-in job queue (§10). autoRun
-  // processes due jobs every minute on this persistent server (§7 confirms
-  // hosting is a persistent process, not serverless — a requirement of
-  // autoRun itself). Disabled under Vitest so the interval it starts
-  // doesn't keep short-lived test processes alive; tests that care about
-  // job execution call payload.jobs.run() explicitly instead.
+  // Session reminders run on Payload's built-in job queue. autoRun
+  // processes due jobs every minute on this persistent server (hosting is
+  // a persistent process, not serverless — a requirement of autoRun
+  // itself). Disabled under Vitest so the interval it starts doesn't keep
+  // short-lived test processes alive; tests that care about job execution
+  // call payload.jobs.run() explicitly instead.
   jobs: {
     tasks: [sendSessionReminderTask],
     autoRun: process.env.VITEST ? [] : [{ cron: '* * * * *', limit: 20 }],

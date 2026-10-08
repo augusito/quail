@@ -3,21 +3,18 @@ import type { CollectionConfig } from 'payload'
 import { hasRole, isAdmin, roleOnlyField } from '../access/roles'
 import { getInProgressInternIds, getSupervisedInternIds } from '../access/scoping'
 
-// §6.6 (proposal v2): "The sample driver logbook's second sheet ('Mentor
-// Driver' — distance driven, area, areas of improvement per intern) is
-// dropped: not needed, so it's out of the model. Each intern keeps a
-// single logbook, self-authored, with the Supervisor reviewing and
-// commenting (§4) — no separate rollup log." This drops the `author` field
-// and the supervisor-authored rollup entries v1 modeled here — a
-// supervisor no longer creates Logbook rows at all, only reviews/comments
-// on the intern's own entries via `supervisorComment`.
+// The sample driver logbook's second sheet ("Mentor Driver" — distance
+// driven, area, areas of improvement per intern) is dropped: not needed, so
+// it's out of the model. Each intern keeps a single logbook, self-authored,
+// with the Supervisor reviewing and commenting — no separate rollup log.
+// This drops the `author` field and the supervisor-authored rollup entries
+// an earlier version modeled here — a supervisor no longer creates Logbook
+// rows at all, only reviews/comments on the intern's own entries via
+// `supervisorComment`.
 //
-// §4: "Update own logbook" — Intern only (own entries). "Review/comment on
-// logbooks" — Admin (all), Supervisor (assigned interns only, via
+// Update own logbook: Intern only (own entries). Review/comment on
+// logbooks: Admin (all), Supervisor (assigned interns only, via
 // Enrollment.supervisor). Trainer has no logbook access in the matrix.
-//
-// Renamed from `LogbookEntry` to `Logbook` per proposal v2's §5 naming
-// notes.
 export const Logbook: CollectionConfig = {
   slug: 'logbooks',
   admin: {
@@ -25,7 +22,7 @@ export const Logbook: CollectionConfig = {
     defaultColumns: ['intern', 'type', 'status'],
   },
   access: {
-    // §6.10: an intern may only create/update her own logbook entries while
+    // An intern may only create/update her own logbook entries while
     // her cohort enrollment is still in-progress — once she's graduated,
     // resigned, or been terminated, her logbook history is read-only (below
     // checked against getInProgressInternIds, the same Enrollment.outcome
@@ -89,7 +86,7 @@ export const Logbook: CollectionConfig = {
       type: 'date',
       required: true,
     },
-    // Driver logbook — per-trip entries (§6.6)
+    // Driver logbook — per-trip entries
     {
       name: 'trip',
       type: 'group',
@@ -115,7 +112,7 @@ export const Logbook: CollectionConfig = {
         { name: 'lessons', type: 'textarea' },
       ],
     },
-    // Non-driver logbook — per-week entries (§6.6)
+    // Non-driver logbook — per-week entries
     {
       name: 'week',
       type: 'group',

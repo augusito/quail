@@ -11,10 +11,6 @@ type Output = {
   skippedReason?: 'already-sent' | 'cancelled' | 'no-recipients' | 'not-found' | 'superseded'
 }
 
-// §6.3: "Reminder timing: 2 hours before session." / "A trainer can
-// reschedule after interns are already notified, and that should trigger
-// an automatic re-notification."
-//
 // Rather than tracking and cancelling stale queued jobs when a session is
 // rescheduled, scheduleSessionReminder (src/hooks/sessionReminders.ts)
 // just queues a fresh, correctly-targeted job every time scheduledDate

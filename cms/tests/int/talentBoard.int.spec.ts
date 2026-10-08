@@ -14,7 +14,7 @@ type Seeded = {
 
 let seeded: Seeded
 
-describe('Public Talent Board access (§6.9, §6.1 graduate-only eligibility)', () => {
+describe('Public Talent Board access (graduate-only eligibility)', () => {
   beforeAll(async () => {
     const payloadConfig = await config
     payload = await getPayload({ config: payloadConfig })
@@ -98,7 +98,7 @@ describe('Public Talent Board access (§6.9, §6.1 graduate-only eligibility)', 
     expect(names).not.toContain('Resigned Alum')
   })
 
-  it('a resigned alum can still read their own profile (Alumni Hub access, §6.10) even though the public board hides it', async () => {
+  it('a resigned alum can still read their own profile (Alumni Hub access) even though the public board hides it', async () => {
     const { docs } = await payload.find({
       collection: 'alumnae',
       where: { intern: { equals: seeded.resignedIntern.id } },
