@@ -88,6 +88,12 @@ There is no production deployment yet. Worth knowing before changing that:
 - **The `Dockerfile` is unexercised in any real deployment.** It builds
   (`next.config.ts` sets `output: 'standalone'`), but nobody has run the
   resulting image against a real Postgres instance.
+- **Intern education history was dropped from v1** (see
+  `she-delivers-proposal.md`'s "Out of scope" note) after it shipped once —
+  it's still in git history if it needs to come back: re-register the
+  collection in `payload.config.ts`, restore the `education` rows in the
+  register endpoint/form, and restore `getOwnInternProfileId` in
+  `src/access/scoping.ts`, which existed only to support its access control.
 
 ## Project layout
 
