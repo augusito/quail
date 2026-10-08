@@ -1,6 +1,6 @@
 # She Delivers Management System — Proposal
 
-> This document reflects what is actually implemented in `cms/` as of the latest merged PR, not just what was originally proposed. Where the build diverged from the original plan (a field dropped, a flow simplified, a field added), that decision is called out in place.
+> This document reflects what is actually implemented in `she-delivers-web/` as of the latest merged PR, not just what was originally proposed. Where the build diverged from the original plan (a field dropped, a flow simplified, a field added), that decision is called out in place.
 
 ## 1. Purpose
 

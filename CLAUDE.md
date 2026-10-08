@@ -1,20 +1,21 @@
 # quail — She Delivers Management System
 
-A Payload CMS app (in `cms/`) for She Delivers, a 6-month internship program training
-women in truck driving, automotive mechanics, ICT, supply chain, and business
-management. It digitizes cohort management, trainer contracting, training delivery,
-compliance documentation, and a post-graduation talent board. See
+A Payload CMS app (in `she-delivers-web/`) for She Delivers, a 6-month internship
+program training women in truck driving, automotive mechanics, ICT, supply chain, and
+business management. It digitizes cohort management, trainer contracting, training
+delivery, compliance documentation, and a post-graduation talent board. See
 `she-delivers-proposal.md` at the repo root for the full spec — it's kept in sync with
-`cms/` behavior, so update it alongside any PR that changes behavior it describes.
+`she-delivers-web/` behavior, so update it alongside any PR that changes behavior it
+describes.
 
-All application code lives under `cms/`; the repo root otherwise holds reference
-documents (the proposal, sample agreements, logbook templates) that are source
-material, not app code.
+All application code lives under `she-delivers-web/`; the repo root otherwise holds
+reference documents (the proposal, sample agreements, logbook templates) that are
+source material, not app code.
 
 ## Setup (fresh checkout)
 
 ```
-cd cms
+cd she-delivers-web
 cp .env.example .env   # set PAYLOAD_SECRET; sqlite is the default local adapter
 npm install
 ```
@@ -22,7 +23,7 @@ npm install
 After pulling changes that touch dependencies, run `rm -rf .next && npm install` —
 a stale Turbopack cache has caused silent failures before.
 
-## Commands (run from `cms/`)
+## Commands (run from `she-delivers-web/`)
 
 - `npm run lint` — ESLint
 - `npm run test:int` — Vitest integration tests against SQLite. Vitest does **not**
@@ -80,8 +81,8 @@ rather than re-deriving behavior from the schema alone.
 - Add a test for each domain rule you implement or change (e.g. "a trainer can't
   mark a contract Signed without a file attached") — these are exactly the rules
   most likely to regress silently.
-- After a field-key rename followed by `test:int`, delete stale `cms/*.db*` files
-  first, or drizzle-kit can hang on an interactive prompt.
+- After a field-key rename followed by `test:int`, delete stale `she-delivers-web/*.db*`
+  files first, or drizzle-kit can hang on an interactive prompt.
 - Payload auto-titles bare camelCase fields in the admin UI — give new fields an
   explicit `label`.
 - A conditional admin field's `admin.condition` must be symmetric with sibling
