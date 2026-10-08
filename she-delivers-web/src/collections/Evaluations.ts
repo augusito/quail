@@ -21,8 +21,9 @@ export const Evaluations: CollectionConfig = {
       if (hasRole(user, 'admin')) return true
       if (data?.author !== user?.id) return false
       if (hasRole(user, 'supervisor') && data?.type === 'standard') {
-        const internIds = await getSupervisedInternIds(payload, user!.id)
-        return internIds.some((id) => id === data?.intern)
+        if (data?.intern === undefined || data?.cohort === undefined) return false
+        const internIds = await getSupervisedInternIds(payload, user!.id, data.cohort)
+        return internIds.some((id) => id === data.intern)
       }
       if (
         hasRole(user, 'trainer') &&

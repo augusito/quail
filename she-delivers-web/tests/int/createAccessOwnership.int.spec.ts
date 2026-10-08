@@ -30,9 +30,11 @@ let seeded: Seeded
 // checks the row names the caller as its owner. Note, Documents, and Alumna
 // switched their `create` access to `adminOrRoleOwnsFieldOnCreate`, which
 // checks `data[field] === user.id` directly; Workplans has a bespoke
-// createAccess that additionally cross-checks the named intern is actually
-// assigned to the calling supervisor (src/collections/Workplans.ts) — these
-// confirm each one now rejects a row naming someone else as its owner.
+// createAccess, and Evaluations' standard-type branch, that additionally
+// cross-check the named intern is actually assigned to the calling
+// supervisor *in the named cohort* (Enrollment.supervisor is per-cohort) —
+// these confirm each one now rejects a row naming someone else as its
+// owner, or naming a real assigned intern under the wrong cohort.
 describe('create access rejects naming someone else as the owner field', () => {
   beforeAll(async () => {
     const payloadConfig = await config
@@ -55,6 +57,7 @@ describe('create access rejects naming someone else as the owner field', () => {
       'notes',
       'documents',
       'workplans',
+      'evaluations',
       'enrollments',
       'alumnae',
       'files',
@@ -186,6 +189,89 @@ describe('create access rejects naming someone else as the owner field', () => {
       user: seeded.supervisorA,
     })
     expect(ownWorkplan.id).toBeDefined()
+  })
+
+  it('a supervisor cannot create a Workplan for their assigned intern tagged with a different cohort', async () => {
+    const cohortA = await payload.create({
+      collection: 'cohorts',
+      data: { name: 'CAO Workplan Cross-Cohort A', tracks: ['ict' as const], startDate: '2026-01-01', endDate: '2026-06-01', status: 'open' as const },
+      overrideAccess: true,
+    })
+    const cohortB = await payload.create({
+      collection: 'cohorts',
+      data: { name: 'CAO Workplan Cross-Cohort B', tracks: ['ict' as const], startDate: '2026-07-01', endDate: '2026-12-01', status: 'open' as const },
+      overrideAccess: true,
+    })
+    // supervisorA is assigned to internA only in cohortA. internA is also
+    // enrolled in cohortB, but under a different supervisor there.
+    await payload.create({
+      collection: 'enrollments',
+      data: { intern: seeded.internA.id, cohort: cohortA.id, supervisor: seeded.supervisorA.id, track: 'ict' as const },
+      overrideAccess: true,
+    })
+    await payload.create({
+      collection: 'enrollments',
+      data: { intern: seeded.internA.id, cohort: cohortB.id, supervisor: seeded.supervisorB.id, track: 'ict' as const },
+      overrideAccess: true,
+    })
+
+    // Denied: internA is supervisorA's assigned intern, but not in cohortB.
+    await expect(
+      payload.create({
+        collection: 'workplans',
+        data: { supervisor: seeded.supervisorA.id, intern: seeded.internA.id, cohort: cohortB.id },
+        overrideAccess: false,
+        user: seeded.supervisorA,
+      }),
+    ).rejects.toThrow()
+
+    const ownWorkplan = await payload.create({
+      collection: 'workplans',
+      data: { supervisor: seeded.supervisorA.id, intern: seeded.internA.id, cohort: cohortA.id },
+      overrideAccess: false,
+      user: seeded.supervisorA,
+    })
+    expect(ownWorkplan.id).toBeDefined()
+  })
+
+  it('a supervisor cannot create a standard Evaluation for their assigned intern tagged with a different cohort', async () => {
+    const cohortA = await payload.create({
+      collection: 'cohorts',
+      data: { name: 'CAO Evaluation Cross-Cohort A', tracks: ['ict' as const], startDate: '2026-01-01', endDate: '2026-06-01', status: 'open' as const },
+      overrideAccess: true,
+    })
+    const cohortB = await payload.create({
+      collection: 'cohorts',
+      data: { name: 'CAO Evaluation Cross-Cohort B', tracks: ['ict' as const], startDate: '2026-07-01', endDate: '2026-12-01', status: 'open' as const },
+      overrideAccess: true,
+    })
+    await payload.create({
+      collection: 'enrollments',
+      data: { intern: seeded.internA.id, cohort: cohortA.id, supervisor: seeded.supervisorA.id, track: 'ict' as const },
+      overrideAccess: true,
+    })
+    await payload.create({
+      collection: 'enrollments',
+      data: { intern: seeded.internA.id, cohort: cohortB.id, supervisor: seeded.supervisorB.id, track: 'ict' as const },
+      overrideAccess: true,
+    })
+
+    await expect(
+      payload.create({
+        collection: 'evaluations',
+        data: { intern: seeded.internA.id, author: seeded.supervisorA.id, cohort: cohortB.id, type: 'standard' as const },
+        overrideAccess: false,
+        user: seeded.supervisorA,
+      }),
+    ).rejects.toThrow()
+
+    const ownEvaluation = await payload.create({
+      collection: 'evaluations',
+      data: { intern: seeded.internA.id, author: seeded.supervisorA.id, cohort: cohortA.id, type: 'standard' as const },
+      overrideAccess: false,
+      user: seeded.supervisorA,
+    })
+    expect(ownEvaluation.id).toBeDefined()
   })
 
   it('an intern cannot create an Alumna profile naming another intern as its owner', async () => {
