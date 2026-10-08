@@ -5,7 +5,7 @@
 import { getPayload, Payload } from 'payload'
 import config from '@/payload.config'
 import type { User } from '@/payload-types'
-import sharp from 'sharp'
+import { uploadDummyFile } from '../helpers/dummyFile'
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
@@ -40,21 +40,7 @@ describe('Contract lifecycle & cohort-closing guards (§6.1, §6.4)', () => {
       }),
     ])
 
-    // A real (if minimal) 1x1 transparent PNG — Payload sniffs actual file
-    // bytes to verify the mimetype, so a fake buffer with a spoofed
-    // mimetype string is rejected. Generated with sharp (already a
-    // dependency) rather than a hand-typed base64 literal, for reliability.
-    const pngBuffer = await sharp({
-      create: { width: 1, height: 1, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } },
-    })
-      .png()
-      .toBuffer()
-    const dummyFile = await payload.create({
-      collection: 'files',
-      data: {},
-      file: { data: pngBuffer, mimetype: 'image/png', name: 'test.png', size: pngBuffer.length },
-      overrideAccess: true,
-    })
+    const dummyFile = await uploadDummyFile(payload)
 
     seeded = { admin, trainer, intern, dummyFileId: dummyFile.id }
   })

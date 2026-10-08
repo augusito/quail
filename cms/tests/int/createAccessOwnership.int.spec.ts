@@ -5,7 +5,7 @@
 import { getPayload, Payload } from 'payload'
 import config from '@/payload.config'
 import type { User } from '@/payload-types'
-import sharp from 'sharp'
+import { uploadDummyFile } from '../helpers/dummyFile'
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
@@ -22,20 +22,6 @@ type Seeded = {
 }
 
 let seeded: Seeded
-
-async function uploadDummyFile(payload: Payload) {
-  const pngBuffer = await sharp({
-    create: { width: 1, height: 1, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } },
-  })
-    .png()
-    .toBuffer()
-  return payload.create({
-    collection: 'files',
-    data: {},
-    file: { data: pngBuffer, mimetype: 'image/png', name: `test-${Date.now()}-${Math.random()}.png`, size: pngBuffer.length },
-    overrideAccess: true,
-  })
-}
 
 // Regression coverage for the `create`-access gap described in
 // adminOrRoleOwnsField's doc comment (src/access/roles.ts): a `Where`

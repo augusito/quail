@@ -5,7 +5,7 @@
 import { getPayload, Payload } from 'payload'
 import config from '@/payload.config'
 import type { User } from '@/payload-types'
-import sharp from 'sharp'
+import { uploadDummyMedia } from '../helpers/dummyFile'
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
@@ -19,23 +19,6 @@ type Seeded = {
 }
 
 let seeded: Seeded
-
-async function uploadDummyImage(
-  payload: Payload,
-  data: { cohort: number; visibilityScope: 'admin-only' | 'cohort-extended' },
-) {
-  const pngBuffer = await sharp({
-    create: { width: 1, height: 1, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } },
-  })
-    .png()
-    .toBuffer()
-  return payload.create({
-    collection: 'media',
-    data,
-    file: { data: pngBuffer, mimetype: 'image/png', name: `test-${Date.now()}-${Math.random()}.png`, size: pngBuffer.length },
-    overrideAccess: true,
-  })
-}
 
 describe('Media read scoping — §4 "unless granted per cohort" trainer exception', () => {
   beforeAll(async () => {
@@ -65,7 +48,7 @@ describe('Media read scoping — §4 "unless granted per cohort" trainer excepti
       data: { name: 'Admin Read Cohort', tracks: ['ict' as const], startDate: '2026-01-01', endDate: '2026-06-01', status: 'open' as const },
       overrideAccess: true,
     })
-    const asset = await uploadDummyImage(payload, { cohort: cohort.id, visibilityScope: 'admin-only' as const })
+    const asset = await uploadDummyMedia(payload, { cohort: cohort.id, visibilityScope: 'admin-only' as const })
 
     const found = await payload.findByID({
       collection: 'media',
@@ -90,7 +73,7 @@ describe('Media read scoping — §4 "unless granted per cohort" trainer excepti
       },
       overrideAccess: true,
     })
-    const asset = await uploadDummyImage(payload, { cohort: cohort.id, visibilityScope: 'cohort-extended' as const })
+    const asset = await uploadDummyMedia(payload, { cohort: cohort.id, visibilityScope: 'cohort-extended' as const })
 
     const found = await payload.findByID({
       collection: 'media',
@@ -115,7 +98,7 @@ describe('Media read scoping — §4 "unless granted per cohort" trainer excepti
       },
       overrideAccess: true,
     })
-    const asset = await uploadDummyImage(payload, { cohort: cohort.id, visibilityScope: 'admin-only' as const })
+    const asset = await uploadDummyMedia(payload, { cohort: cohort.id, visibilityScope: 'admin-only' as const })
 
     const found = await payload.findByID({
       collection: 'media',
@@ -140,7 +123,7 @@ describe('Media read scoping — §4 "unless granted per cohort" trainer excepti
       },
       overrideAccess: true,
     })
-    const asset = await uploadDummyImage(payload, { cohort: cohort.id, visibilityScope: 'cohort-extended' as const })
+    const asset = await uploadDummyMedia(payload, { cohort: cohort.id, visibilityScope: 'cohort-extended' as const })
 
     const found = await payload.findByID({
       collection: 'media',
@@ -158,7 +141,7 @@ describe('Media read scoping — §4 "unless granted per cohort" trainer excepti
       data: { name: 'Intern Denied Cohort', tracks: ['ict' as const], startDate: '2026-01-01', endDate: '2026-06-01', status: 'open' as const },
       overrideAccess: true,
     })
-    const asset = await uploadDummyImage(payload, { cohort: cohort.id, visibilityScope: 'cohort-extended' as const })
+    const asset = await uploadDummyMedia(payload, { cohort: cohort.id, visibilityScope: 'cohort-extended' as const })
 
     const found = await payload.findByID({
       collection: 'media',
@@ -183,10 +166,10 @@ describe('Media read scoping — §4 "unless granted per cohort" trainer excepti
       },
       overrideAccess: true,
     })
-    const asset = await uploadDummyImage(payload, { cohort: cohort.id, visibilityScope: 'cohort-extended' as const })
+    const asset = await uploadDummyMedia(payload, { cohort: cohort.id, visibilityScope: 'cohort-extended' as const })
 
     await expect(
-      uploadDummyImage(payload, { cohort: cohort.id, visibilityScope: 'cohort-extended' as const }).then(() =>
+      uploadDummyMedia(payload, { cohort: cohort.id, visibilityScope: 'cohort-extended' as const }).then(() =>
         payload.create({
           collection: 'media',
           data: { cohort: cohort.id, visibilityScope: 'cohort-extended' as const },

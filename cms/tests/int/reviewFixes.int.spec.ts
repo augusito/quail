@@ -6,7 +6,7 @@
 import { getPayload, Payload } from 'payload'
 import config from '@/payload.config'
 import type { User } from '@/payload-types'
-import sharp from 'sharp'
+import { uploadDummyFile } from '../helpers/dummyFile'
 
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 
@@ -51,17 +51,7 @@ describe('Review fixes: logbook read-only, contract row-level access, driving-sk
       }),
     ])
 
-    const pngBuffer = await sharp({
-      create: { width: 1, height: 1, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } },
-    })
-      .png()
-      .toBuffer()
-    const dummyFile = await payload.create({
-      collection: 'files',
-      data: {},
-      file: { data: pngBuffer, mimetype: 'image/png', name: 'test.png', size: pngBuffer.length },
-      overrideAccess: true,
-    })
+    const dummyFile = await uploadDummyFile(payload)
 
     seeded = { admin, trainer, otherTrainer, intern, dummyFileId: dummyFile.id }
   })
@@ -239,7 +229,7 @@ describe('Review fixes: logbook read-only, contract row-level access, driving-sk
   describe('Session.reminderStatus is job-managed, not trainer-writable', () => {
     it('a trainer cannot mark their own session reminder as already sent', async () => {
       const cohort = await createCohort('Reminder Lock Test')
-      const moduleDoc = await payload.create({
+      const trainingModule = await payload.create({
         collection: 'modules',
         data: { track: 'ict' as const, name: 'Reminder Lock Module' },
         overrideAccess: true,
@@ -247,7 +237,7 @@ describe('Review fixes: logbook read-only, contract row-level access, driving-sk
       const session = await payload.create({
         collection: 'sessions',
         data: {
-          module: moduleDoc.id,
+          module: trainingModule.id,
           trainer: seeded.trainer.id,
           cohort: cohort.id,
           scheduledDate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
@@ -268,7 +258,7 @@ describe('Review fixes: logbook read-only, contract row-level access, driving-sk
 
     it('a trainer can still reschedule their own session (unrelated field still writable)', async () => {
       const cohort = await createCohort('Reminder Lock Test 2')
-      const moduleDoc = await payload.create({
+      const trainingModule = await payload.create({
         collection: 'modules',
         data: { track: 'ict' as const, name: 'Reminder Lock Module 2' },
         overrideAccess: true,
@@ -276,7 +266,7 @@ describe('Review fixes: logbook read-only, contract row-level access, driving-sk
       const session = await payload.create({
         collection: 'sessions',
         data: {
-          module: moduleDoc.id,
+          module: trainingModule.id,
           trainer: seeded.trainer.id,
           cohort: cohort.id,
           scheduledDate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
