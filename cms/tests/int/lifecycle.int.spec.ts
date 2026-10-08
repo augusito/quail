@@ -243,7 +243,6 @@ describe('Contract lifecycle & cohort-closing guards', () => {
         overrideAccess: true,
       })
 
-      // No evaluation yet — blocked.
       await expect(
         payload.update({
           collection: 'cohorts',

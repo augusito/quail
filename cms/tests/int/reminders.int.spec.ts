@@ -112,7 +112,7 @@ describe('Session reminders', () => {
   }
 
   it('queues a reminder job for ~2 hours before the scheduled time when a session is created', async () => {
-    const scheduledDate = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000) // 3 days out
+    const scheduledDate = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000)
     const { session } = await setUp('Reminder Queue Test', scheduledDate)
 
     const job = await latestReminderJob(session.id)

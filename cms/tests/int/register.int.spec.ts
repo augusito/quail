@@ -431,7 +431,7 @@ describe('/api/register (invite-link self-registration)', () => {
       const ip = '203.0.113.1'
       for (let i = 0; i < 5; i++) {
         const response = await callRegister({ token: 'not-a-real-token', ...internBody() }, ip)
-        expect(response.status).toBe(404) // under the limit: normal invalid-token handling
+        expect(response.status).toBe(404)
       }
 
       const limited = await callRegister({ token: 'not-a-real-token', ...internBody() }, ip)

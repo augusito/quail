@@ -86,7 +86,6 @@ export const Logbook: CollectionConfig = {
       type: 'date',
       required: true,
     },
-    // Driver logbook — per-trip entries
     {
       name: 'trip',
       type: 'group',
@@ -112,7 +111,6 @@ export const Logbook: CollectionConfig = {
         { name: 'lessons', type: 'textarea' },
       ],
     },
-    // Non-driver logbook — per-week entries
     {
       name: 'week',
       type: 'group',

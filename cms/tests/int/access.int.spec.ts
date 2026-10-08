@@ -83,9 +83,8 @@ describe('Access control permissions matrix', () => {
     const updated = await payload.update({
       collection: 'users',
       id: self.id,
-      // Attempted privilege escalation — role/status field access
-      // (admin-only write) should silently drop these and keep the
-      // original values.
+      // Privilege escalation attempt: role/status access should silently
+      // drop these fields rather than throw.
       data: { role: 'admin' as const, status: 'inactive' as const },
       overrideAccess: false,
       user: self,
@@ -110,15 +109,13 @@ describe('Access control permissions matrix', () => {
       overrideAccess: true,
     })
     // internA must actually be enrolled in a cohort this trainer teaches
-    // moduleA in — owning the module alone isn't enough (see the
-    // isInternInTrainerModuleCohort test below for the gap this closes).
+    // moduleA in — owning the module alone isn't enough.
     await payload.create({
       collection: 'enrollments',
       data: { intern: seeded.internA.id, cohort: cohort.id, track: 'ict' },
       overrideAccess: true,
     })
 
-    // Own module, enrolled intern: allowed
     const ownScore = await payload.create({
       collection: 'scores',
       data: { intern: seeded.internA.id, module: moduleA.id, value: 90 },
@@ -127,7 +124,6 @@ describe('Access control permissions matrix', () => {
     })
     expect(ownScore.id).toBeDefined()
 
-    // Someone else's module: denied
     await expect(
       payload.create({
         collection: 'scores',
