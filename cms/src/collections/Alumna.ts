@@ -8,7 +8,7 @@ const readAccess: Access = async ({ req: { user, payload } }): Promise<AccessRes
   const graduatedInternIds = await getGraduatedInternIds(payload)
   const publicListing: Where = { and: [{ optedIn: { equals: true } }, { intern: { in: graduatedInternIds } }] }
   if (hasRole(user, 'intern')) {
-    // Alumni Hub access (§6.10) covers viewing/editing your own profile
+    // Alumni Hub access covers viewing/editing your own profile
     // regardless of graduated/resigned outcome; the graduated-only filter
     // only applies to *other* people's profiles (the public listing).
     return { or: [{ intern: { equals: user!.id } }, publicListing] }
@@ -17,22 +17,21 @@ const readAccess: Access = async ({ req: { user, payload } }): Promise<AccessRes
   return publicListing
 }
 
-// §6.9 Talent Board + §6.10 Alumni Hub. Talent Board eligibility is limited
-// to actual graduates (not resigned/non-completing alumni) — enforced via
+// Talent Board + Alumni Hub. Talent Board eligibility is limited to
+// actual graduates (not resigned/non-completing alumni) — enforced via
 // getGraduatedInternIds cross-checking the linked intern's
-// Enrollment.outcome (§6.1) before surfacing optedIn profiles publicly.
-// Employers contact admin as intermediary; this is not a messaging surface
-// (§6.9).
+// Enrollment.outcome before surfacing optedIn profiles publicly.
+// Employers contact admin as intermediary; this is not a messaging surface.
 //
-// §4: "View talent board" — Admin (all), Public (✅, view-only). "Edit own
-// talent board listing" — Admin, Intern (own, post-graduation opt-in).
+// "View talent board" — Admin (all), Public (view-only). "Edit own talent
+// board listing" — Admin, Intern (own, post-graduation opt-in).
 //
-// Renamed from `AlumniProfile` to `Alumna` per proposal v2's §5 naming
-// notes. `intern` still relates to `users` (not the new `Intern` profile
-// collection) — this is about which login account the listing belongs to,
-// not the intern's statutory/registration profile data, and keeping it on
-// `users` avoids ever nesting the sensitive Intern fields (§7) into a
-// publicly-readable relationship.
+// Renamed from `AlumniProfile` to `Alumna`. `intern` still relates to
+// `users` (not the new `Intern` profile collection) — this is about which
+// login account the listing belongs to, not the intern's
+// statutory/registration profile data, and keeping it on `users` avoids
+// ever nesting the sensitive Intern fields into a publicly-readable
+// relationship.
 export const Alumna: CollectionConfig = {
   slug: 'alumnae',
   admin: {
@@ -58,7 +57,7 @@ export const Alumna: CollectionConfig = {
       required: true,
       admin: {
         description:
-          'The public Talent Board display name (§6.9 public field) — separate from Users.name, since the intern\'s account isn\'t publicly readable.',
+          'The public Talent Board display name — separate from Users.name, since the intern\'s account isn\'t publicly readable.',
       },
     },
     {
@@ -74,7 +73,7 @@ export const Alumna: CollectionConfig = {
       name: 'courses',
       type: 'array',
       admin: {
-        description: 'Driving class certifications, defensive driving certification, diploma/course names and issuing institutions (§6.9).',
+        description: 'Driving class certifications, defensive driving certification, diploma/course names and issuing institutions.',
       },
       fields: [{ name: 'name', type: 'text', required: true }],
     },
@@ -87,7 +86,7 @@ export const Alumna: CollectionConfig = {
       name: 'bio',
       type: 'textarea',
       admin: {
-        description: 'Narrative skills/ability summary: soft skills, technical skills gained, notable achievements (§6.9).',
+        description: 'Narrative skills/ability summary: soft skills, technical skills gained, notable achievements.',
       },
     },
     {
@@ -103,7 +102,7 @@ export const Alumna: CollectionConfig = {
       type: 'checkbox',
       defaultValue: false,
       admin: {
-        description: 'Opt-in step at graduation for appearing on the public Talent Board; self-service, can be withdrawn at any time (§6.9).',
+        description: 'Opt-in step at graduation for appearing on the public Talent Board; self-service, can be withdrawn at any time.',
       },
     },
   ],

@@ -23,7 +23,7 @@ let seeded: Seeded
 
 type ExportHandler = typeof exportCollectionEndpoint.handler
 
-describe('GET /api/export/:collection (§6.11 Excel exports)', () => {
+describe('GET /api/export/:collection (Excel exports)', () => {
   beforeAll(async () => {
     const payloadConfig = await config
     payload = await getPayload({ config: payloadConfig })
@@ -151,8 +151,8 @@ describe('GET /api/export/:collection (§6.11 Excel exports)', () => {
     expect(dataRowCount).toBe(1)
   })
 
-  // §7 (proposal v2): "national ID/passport numbers, KRA PINs, SHIF/NSSF
-  // numbers, and date of birth... not exposed in bulk exports". The
+  // Sensitive fields (national ID/passport numbers, KRA PINs, SHIF/NSSF
+  // numbers, and date of birth) must not be exposed in bulk exports. The
   // trainers/interns export definitions (src/exports/registry.ts) simply
   // don't list those columns — confirm that holds for a real .xlsx, not
   // just by re-reading the column list.

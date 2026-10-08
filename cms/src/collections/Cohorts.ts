@@ -3,10 +3,10 @@ import type { CollectionConfig } from 'payload'
 import { isAdmin, isAuthenticated } from '../access/roles'
 import { validateCohortClosingChecklist } from '../hooks/cohortClosingChecklist'
 
-// §6.1: a cohort can run multiple tracks in parallel. Closing is a
-// deliberate admin-confirmed action, not automatic on end date — enforced
-// by access control (admin-only update) plus the closing-checklist
-// beforeChange hook below (see src/hooks/cohortClosingChecklist.ts).
+// A cohort can run multiple tracks in parallel. Closing is a deliberate
+// admin-confirmed action, not automatic on end date — enforced by access
+// control (admin-only update) plus the closing-checklist beforeChange hook
+// below (see src/hooks/cohortClosingChecklist.ts).
 export const Cohorts: CollectionConfig = {
   slug: 'cohorts',
   admin: {
@@ -14,7 +14,7 @@ export const Cohorts: CollectionConfig = {
     defaultColumns: ['name', 'status', 'startDate', 'endDate'],
   },
   access: {
-    // "Create/close cohorts": Admin only (§4). Everyone else who's
+    // "Create/close cohorts": Admin only. Everyone else who's
     // authenticated needs to read cohorts to do their own work (schedule
     // sessions, see own enrollment, etc.) — cohorts carry no sensitive data.
     create: isAdmin,
@@ -74,7 +74,7 @@ export const Cohorts: CollectionConfig = {
       filterOptions: { role: { equals: 'trainer' } },
       admin: {
         description:
-          '§4 "Media library access… unless granted per cohort" — trainers listed here can view this cohort\'s cohort-extended media (Media.ts). Admin-only assets stay admin-only regardless.',
+          "Trainers listed here can view this cohort's cohort-extended media (Media.ts). Admin-only assets stay admin-only regardless.",
       },
     },
   ],

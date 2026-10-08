@@ -20,7 +20,7 @@ type Seeded = {
 
 let seeded: Seeded
 
-describe('Media read scoping — §4 "unless granted per cohort" trainer exception', () => {
+describe('Media read scoping — "unless granted per cohort" trainer exception', () => {
   beforeAll(async () => {
     const payloadConfig = await config
     payload = await getPayload({ config: payloadConfig })

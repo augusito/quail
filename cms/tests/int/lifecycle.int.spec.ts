@@ -20,7 +20,7 @@ type Seeded = {
 
 let seeded: Seeded
 
-describe('Contract lifecycle & cohort-closing guards (§6.1, §6.4)', () => {
+describe('Contract lifecycle & cohort-closing guards', () => {
   beforeAll(async () => {
     const payloadConfig = await config
     payload = await getPayload({ config: payloadConfig })
@@ -243,7 +243,6 @@ describe('Contract lifecycle & cohort-closing guards (§6.1, §6.4)', () => {
         overrideAccess: true,
       })
 
-      // No evaluation yet — blocked.
       await expect(
         payload.update({
           collection: 'cohorts',

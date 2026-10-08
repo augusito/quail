@@ -3,25 +3,24 @@ import { APIError, type CollectionBeforeChangeHook } from 'payload'
 import type { Contract } from '../payload-types'
 
 /**
- * §6.4: "Contract lifecycle state machine: Draft → Sent → Signed → Active →
- * Released... Each transition is enforced with a straightforward
- * validation check (which role may move it, and from which prior state)".
+ * Contract lifecycle state machine: Draft → Sent → Signed → Active →
+ * Released. Each transition is enforced with a validation check for which
+ * role may move it, and from which prior state.
  *
  * Access control (src/access/roles.ts, wired into Contracts.ts) already
  * decides *whether a request can touch this row at all* (admin: any
  * contract; trainer: only their own). This hook is the second, narrower
- * check §6.4 asks for: *which specific transition* is being attempted, and
- * whether this role may perform exactly that step. A trainer's row-level
- * write access covers their own contract, but that doesn't mean they may
- * jump it straight to "active" or "released" — only admin may, and only
- * one step at a time.
+ * check: *which specific transition* is being attempted, and whether this
+ * role may perform exactly that step. A trainer's row-level write access
+ * covers their own contract, but that doesn't mean they may jump it
+ * straight to "active" or "released" — only admin may, and only one step
+ * at a time.
  *
- * "A trainer can flag/request completion, but admin makes the final
- * transition" (§6.4, confirmed) is modeled as the separate
- * `releaseRequested` field, not as trainer write access to status itself.
- * Requesting release only makes sense once the engagement is actually
- * underway, so it's additionally gated on the contract already being
- * Active.
+ * A trainer can flag/request completion, but admin makes the final
+ * transition — modeled as the separate `releaseRequested` field, not as
+ * trainer write access to status itself. Requesting release only makes
+ * sense once the engagement is actually underway, so it's additionally
+ * gated on the contract already being Active.
  *
  * Two more checks below aren't single-step order/role checks, so they
  * don't fit the TRANSITION_ROLES table: signing requires the trainer (or

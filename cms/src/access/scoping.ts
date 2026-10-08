@@ -2,15 +2,15 @@ import type { Payload } from 'payload'
 
 /**
  * Row-level scoping that needs a query, not just a field comparison on the
- * document itself — e.g. §4's "supervisor may read logbook entries only for
- * their assigned interns" and §10's "trainer may read Scores only where the
- * module's trainer is themself". Both cross a relationship the target
+ * document itself — e.g. a supervisor may read logbook entries only for
+ * their assigned interns, and a trainer may read Scores only where the
+ * module's trainer is themself. Both cross a relationship the target
  * collection doesn't carry directly, so we resolve the allowed ID set first.
  */
 
 type ID = number | string
 
-/** Enrollment.supervisor (added for this) is how "assigned interns" (§4, §6.6, §6.8) is modeled. */
+/** Enrollment.supervisor (added for this) is how "assigned interns" is modeled. */
 export async function getSupervisedInternIds(payload: Payload, supervisorId: ID): Promise<ID[]> {
   const { docs } = await payload.find({
     collection: 'enrollments',
@@ -22,7 +22,7 @@ export async function getSupervisedInternIds(payload: Payload, supervisorId: ID)
   return [...new Set(docs.map((doc) => doc.intern as ID))]
 }
 
-/** "Own modules" for a trainer (§4, §6.5, §10) is derived from Session.trainer, since Module itself has no trainer field. */
+/** "Own modules" for a trainer is derived from Session.trainer, since Module itself has no trainer field. */
 export async function getTrainerModuleIds(payload: Payload, trainerId: ID): Promise<ID[]> {
   const { docs } = await payload.find({
     collection: 'sessions',
@@ -35,11 +35,11 @@ export async function getTrainerModuleIds(payload: Payload, trainerId: ID): Prom
 }
 
 /**
- * §6.5: the driving-skills checkpoint exception is scoped to "each
- * driver-track intern" — used by Evaluations' create access
- * (src/collections/Evaluations.ts) so a trainer can only author a
- * driving-skills-baseline/-final evaluation for an intern actually enrolled
- * in the truck-driving track for that cohort, not any intern on any track.
+ * The driving-skills checkpoint exception is scoped to each driver-track
+ * intern — used by Evaluations' create access (src/collections/Evaluations.ts)
+ * so a trainer can only author a driving-skills-baseline/-final evaluation
+ * for an intern actually enrolled in the truck-driving track for that
+ * cohort, not any intern on any track.
  */
 export async function isInternOnTruckDrivingTrack(
   payload: Payload,
@@ -63,9 +63,9 @@ export async function isInternOnTruckDrivingTrack(
 }
 
 /**
- * §6.10: "their logbook history becomes read-only once the cohort ends —
- * they can view past entries but not modify them." Resolves which interns
- * are still mid-cohort (i.e. not yet graduated/resigned/terminated) so
+ * An intern's logbook history becomes read-only once the cohort ends — they
+ * can view past entries but not modify them. Resolves which interns are
+ * still mid-cohort (i.e. not yet graduated/resigned/terminated) so
  * Logbook's own-record write access (src/collections/Logbook.ts) can be
  * scoped to them, the same way getGraduatedInternIds/getAlumniInternIds
  * cross-check Enrollment.outcome for Alumna/Announcements below.
@@ -82,12 +82,11 @@ export async function getInProgressInternIds(payload: Payload): Promise<ID[]> {
 }
 
 /**
- * §6.1: "Resigned (non-completing) alumni are flagged internally as
- * distinct from graduated alumni, so Talent Board eligibility can be
- * limited to actual graduates while both still share the same Alumni Hub
- * access." Alumna itself doesn't record why an intern left — that's
- * Enrollment.outcome — so public Talent Board visibility (§6.9) has to be
- * cross-checked against it here.
+ * Resigned (non-completing) alumni are flagged internally as distinct from
+ * graduated alumni, so Talent Board eligibility can be limited to actual
+ * graduates while both still share the same Alumni Hub access. Alumna
+ * itself doesn't record why an intern left — that's Enrollment.outcome —
+ * so public Talent Board visibility has to be cross-checked against it here.
  */
 export async function getGraduatedInternIds(payload: Payload): Promise<ID[]> {
   const { docs } = await payload.find({
@@ -101,10 +100,9 @@ export async function getGraduatedInternIds(payload: Payload): Promise<ID[]> {
 }
 
 /**
- * §6.1: "both still share the same Alumni Hub access" — graduated and
- * resigned interns alike. Used to gate Announcements read (§4 "Alumni Hub
- * announcements"), which the matrix doesn't grant to still-in-progress
- * interns or other roles.
+ * Graduated and resigned interns alike share the same Alumni Hub access.
+ * Used to gate Announcements read, which still-in-progress interns and
+ * other roles don't get.
  */
 export async function getAlumniInternIds(payload: Payload): Promise<ID[]> {
   const { docs } = await payload.find({
@@ -171,12 +169,12 @@ export async function getAccessibleFileIds(payload: Payload, userId: ID): Promis
 }
 
 /**
- * §6.5/§10: owning a module (getTrainerModuleIds, derived from
- * Session.trainer) isn't enough on its own to let a trainer post a Score
- * for a given intern — a module can run across several cohorts, so this
- * additionally requires the intern to be enrolled in a cohort where *this*
- * trainer actually has a session for *this* module, not just any cohort.
- * Used by Scores' create access (src/collections/Scores.ts).
+ * Owning a module (getTrainerModuleIds, derived from Session.trainer)
+ * isn't enough on its own to let a trainer post a Score for a given intern
+ * — a module can run across several cohorts, so this additionally requires
+ * the intern to be enrolled in a cohort where *this* trainer actually has
+ * a session for *this* module, not just any cohort. Used by Scores' create
+ * access (src/collections/Scores.ts).
  */
 export async function isInternInTrainerModuleCohort(
   payload: Payload,
@@ -205,10 +203,10 @@ export async function isInternInTrainerModuleCohort(
 }
 
 /**
- * §4 "Post module notes/scores": a trainer's self-attributed `trainer`
- * field on Note (checked by adminOrRoleOwnsFieldOnCreate) only proves who's
- * submitting, not that the named `session` is actually theirs to annotate.
- * Used by Note's create access (src/collections/Note.ts).
+ * A trainer's self-attributed `trainer` field on Note (checked by
+ * adminOrRoleOwnsFieldOnCreate) only proves who's submitting, not that the
+ * named `session` is actually theirs to annotate. Used by Note's create
+ * access (src/collections/Note.ts).
  */
 export async function isSessionOwnedByTrainer(payload: Payload, trainerId: ID, sessionId: ID): Promise<boolean> {
   const { totalDocs } = await payload.find({
@@ -222,7 +220,7 @@ export async function isSessionOwnedByTrainer(payload: Payload, trainerId: ID, s
 }
 
 /**
- * §4 "Media library access… unless granted per cohort" — Cohort.mediaAccessGrantedTo
+ * Media library access is per-cohort unless granted — Cohort.mediaAccessGrantedTo
  * (added for this) is admin's per-cohort allowlist of trainers. Resolves
  * which cohorts a given trainer has been granted into.
  */

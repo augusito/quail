@@ -22,11 +22,9 @@ type Seeded = {
 
 let seeded: Seeded
 
-// Regression coverage for the four access-control gaps found in the
-// consistency/completeness/correctness review of proposal v2 (PR #7):
-// §6.10 logbook read-only after graduation, §6.4 contract row-level access,
-// §6.5 driving-skills-checkpoint track scoping, and job-managed
-// Session.reminderStatus.
+// Regression coverage for four access-control gaps: logbook read-only
+// after graduation, contract row-level access, driving-skills-checkpoint
+// track scoping, and job-managed Session.reminderStatus.
 describe('Review fixes: logbook read-only, contract row-level access, driving-skills track scoping, reminder status lock', () => {
   beforeAll(async () => {
     const payloadConfig = await config
@@ -83,7 +81,7 @@ describe('Review fixes: logbook read-only, contract row-level access, driving-sk
     })
   }
 
-  describe('§6.10 Logbook read-only after graduation', () => {
+  describe('Logbook read-only after graduation', () => {
     it('an in-progress intern can still update her own logbook entry', async () => {
       const cohort = await createCohort('Logbook Test A')
       await payload.create({
@@ -159,7 +157,7 @@ describe('Review fixes: logbook read-only, contract row-level access, driving-sk
     })
   })
 
-  describe('§6.4 Contracts: trainer row-level access', () => {
+  describe('Contracts: trainer row-level access', () => {
     it('a trainer can sign their own contract', async () => {
       const cohort = await createCohort('Contract Rate Test 3')
       const contract = await payload.create({
@@ -179,7 +177,7 @@ describe('Review fixes: logbook read-only, contract row-level access, driving-sk
     })
   })
 
-  describe('§6.5 driving-skills checkpoint is scoped to the truck-driving track', () => {
+  describe('driving-skills checkpoint is scoped to the truck-driving track', () => {
     it('a trainer can author a driving-skills evaluation for a truck-driving intern', async () => {
       const cohort = await createCohort('Driving Track Test A', ['truck-driving'])
       await payload.create({

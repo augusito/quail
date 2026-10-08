@@ -91,8 +91,8 @@ function fieldError(field: Field, value: string): string | null {
   return null
 }
 
-// §6.2 self-registration form (proposal v2), as a multi-step wizard. Reads
-// the invite token from the URL (?token=... — the link logged by
+// Self-registration form, as a multi-step wizard. Reads the invite token
+// from the URL (?token=... — the link logged by
 // src/collections/Invites.ts), looks up the invite's role/email/cohort via
 // GET /api/register?token=... (so it knows which field set to render before
 // the person types anything), then posts the role-specific profile fields

@@ -3,12 +3,12 @@ import type { CollectionConfig } from 'payload'
 import { adminOnlyField, adminOrRoleOwnsField, isAdmin } from '../access/roles'
 import { validateContractStatusTransition } from '../hooks/contractLifecycle'
 
-// §6.4: admin uploads terms, trainer downloads/signs/scans/uploads back.
-// Lifecycle: Draft → Sent → Signed → Active → Released, and only
-// admin may move a contract to Released (confirmed).
+// Admin uploads contract terms; the trainer downloads, signs, and
+// re-uploads it. Lifecycle: Draft → Sent → Signed → Active → Released, and
+// only admin may move a contract to Released.
 //
 // Access control below grants trainers row-level read/write on their own
-// contract (§4 "Sign & manage own contract"); the beforeChange hook narrows
+// contract ("Sign & manage own contract"); the beforeChange hook narrows
 // that further to which specific status transition they're allowed to make
 // (see src/hooks/contractLifecycle.ts).
 export const Contracts: CollectionConfig = {
@@ -49,7 +49,7 @@ export const Contracts: CollectionConfig = {
       },
       admin: {
         description:
-          "Trainers aren't tied to a cohort at invite time (§6.2) — each contract is created separately, per cohort the trainer participates in.",
+          "Trainers aren't tied to a cohort at invite time — each contract is created separately, per cohort the trainer participates in.",
       },
     },
     {
@@ -87,7 +87,7 @@ export const Contracts: CollectionConfig = {
       defaultValue: false,
       admin: {
         description:
-          '"A trainer can flag/request completion, but admin makes the final transition" (§6.4, confirmed). Setting this does not itself release the contract — admin still moves status to Released.',
+          'A trainer can flag/request completion, but admin makes the final transition. Setting this does not itself release the contract — admin still moves status to Released.',
       },
     },
   ],

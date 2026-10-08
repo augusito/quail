@@ -16,19 +16,18 @@ import type {
 import type { ExportColumn } from './buildWorkbook'
 import { displayName, formatBoolean, formatDate, joinValues } from './format'
 
-// §6.11: "Confirmed export destination for v1: a straight Excel download."
-// §4 "Bulk export": Admin only. Each entry here is a hand-written column
-// list rather than a generic field-dump — a spreadsheet an admin actually
-// wants shows human-readable names (via displayName, since collections are
+// Bulk export is admin only. Each entry here is a hand-written column list
+// rather than a generic field-dump — a spreadsheet an admin actually wants
+// shows human-readable names (via displayName, since collections are
 // queried at depth: 1 so relationships arrive populated), not raw
 // relationship IDs or JSON blobs, and stays stable when an unrelated field
 // gets added to a collection.
 //
-// This hand-written-column approach is also what satisfies §7's new "not
-// exposed in bulk exports" requirement for sensitive fields
+// This hand-written-column approach is also what keeps sensitive fields
 // (dateOfBirth, idNumber, kraPin, shifNumber, nssfNumber, all on
-// Trainer/Intern, §5): the `trainers`/`interns` definitions below simply
-// never list those columns, rather than needing a separate redaction step.
+// Trainer/Intern) out of bulk exports: the `trainers`/`interns` definitions
+// below simply never list those columns, rather than needing a separate
+// redaction step.
 //
 // A narrower, curated set of collections is exposed here rather than every
 // collection in the app — group/array-heavy or upload-only collections
@@ -65,8 +64,8 @@ export const exportRegistry: Partial<Record<CollectionSlug, ExportDefinition<unk
     { header: 'Postal Address', get: (d) => d.address ?? '' },
     { header: 'Phone', get: (d) => d.phone },
     { header: 'Email', get: (d) => d.email },
-    // §7: idNumber and kraPin deliberately omitted — sensitive
-    // personal data, not exposed in bulk exports.
+    // idNumber and kraPin deliberately omitted — sensitive personal data,
+    // not exposed in bulk exports.
   ]),
 
   interns: defineExport<Intern>('Interns', [
@@ -78,11 +77,10 @@ export const exportRegistry: Partial<Record<CollectionSlug, ExportDefinition<unk
     { header: 'Email', get: (d) => d.email },
     { header: 'Next of Kin Name', get: (d) => d.nextOfKin?.name ?? '' },
     { header: 'Next of Kin Phone', get: (d) => d.nextOfKin?.phone ?? '' },
-    // §7: dateOfBirth, idNumber, kraPin, shifNumber, nssfNumber
-    // deliberately omitted — sensitive personal data, not exposed in bulk
-    // exports. Next-of-kin contact details aren't the intern's own
-    // sensitive data (§7 only names the intern/trainer's own statutory
-    // numbers and DOB) so are included as they're useful roster info.
+    // dateOfBirth, idNumber, kraPin, shifNumber, nssfNumber deliberately
+    // omitted — sensitive personal data, not exposed in bulk exports.
+    // Next-of-kin contact details aren't the intern's own sensitive data,
+    // so are included as they're useful roster info.
   ]),
 
   enrollments: defineExport<Enrollment>('Enrollments', [

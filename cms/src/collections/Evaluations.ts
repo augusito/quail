@@ -3,13 +3,13 @@ import type { CollectionConfig } from 'payload'
 import { hasRole, isAdmin } from '../access/roles'
 import { getSupervisedInternIds, isInternOnTruckDrivingTrack } from '../access/scoping'
 
-// §6.5: normally supervisor-authored. The driving-skills checkpoint
-// (driver track only, baseline + pre-graduation) is a confirmed exception —
+// Normally supervisor-authored. The driving-skills checkpoint (driver
+// track only, baseline + pre-graduation) is a confirmed exception —
 // trainer-authored instead.
-// §4 "Submit workplans & evaluations": Supervisor only (plus the §6.5
-// trainer exception for driving-skills checkpoints; Admin retains full
-// access per the global principle in access/roles.ts). Not granted to
-// interns in the matrix — they see their Score, not the raw Evaluation.
+// "Submit workplans & evaluations": Supervisor only (plus the trainer
+// exception for driving-skills checkpoints; Admin retains full access per
+// the global principle in access/roles.ts). Not granted to interns — they
+// see their Score, not the raw Evaluation.
 export const Evaluations: CollectionConfig = {
   slug: 'evaluations',
   admin: {
@@ -30,7 +30,7 @@ export const Evaluations: CollectionConfig = {
         data?.intern !== undefined &&
         data?.cohort !== undefined
       ) {
-        // §6.5: "driver track only" — a trainer may author this checkpoint
+        // "Driver track only" — a trainer may author this checkpoint
         // only for an intern actually enrolled in the truck-driving track
         // for the named cohort, not for any intern on any track.
         return isInternOnTruckDrivingTrack(payload, data.intern, data.cohort)
@@ -67,7 +67,7 @@ export const Evaluations: CollectionConfig = {
       relationTo: 'users',
       required: true,
       admin: {
-        description: 'Supervisor for standard evaluations; trainer for driving-skills checkpoints (§6.5).',
+        description: 'Supervisor for standard evaluations; trainer for driving-skills checkpoints.',
       },
     },
     {

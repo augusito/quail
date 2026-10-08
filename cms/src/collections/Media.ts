@@ -16,19 +16,18 @@ const readAccess: Access = async ({ req: { user, payload } }): Promise<AccessRes
   return where
 }
 
-// Cohort media library (§4, §6.4). Renamed from `MediaAssets` to `Media` per
-// proposal v2's §5 naming notes — the old generic-uploads collection moved
-// to `Images` (src/collections/Images.ts) to free up this slug/name, since
-// this is the entity the proposal actually names `Media`. Distinct from
-// Images: this carries a consent flag — capturing whether the depicted
-// intern or trainer has consented to promotional use beyond the library
-// itself — and cohort-scoped visibility (admin-only vs. cohort-extended).
+// Cohort media library. Renamed from `MediaAssets` to `Media` — the old
+// generic-uploads collection moved to `Images` (src/collections/Images.ts)
+// to free up this slug/name. Distinct from Images: this carries a consent
+// flag — capturing whether the depicted intern or trainer has consented to
+// promotional use beyond the library itself — and cohort-scoped visibility
+// (admin-only vs. cohort-extended).
 //
-// §4 "Media library access": Admin (all). Trainer is granted read-only
-// access, but only to visibilityScope: 'cohort-extended' assets belonging to
-// a cohort they've been listed on via Cohort.mediaAccessGrantedTo ("unless
-// granted per cohort") — admin-only assets stay admin-exclusive even within
-// a granted cohort. Intern/Supervisor/Public remain ❌, matching the matrix.
+// Media library access: Admin (all). Trainer is granted read-only access,
+// but only to visibilityScope: 'cohort-extended' assets belonging to a
+// cohort they've been listed on via Cohort.mediaAccessGrantedTo — admin-only
+// assets stay admin-exclusive even within a granted cohort. Intern,
+// Supervisor, and the public have no access.
 export const Media: CollectionConfig = {
   slug: 'media',
   admin: {
@@ -63,7 +62,7 @@ export const Media: CollectionConfig = {
       type: 'checkbox',
       defaultValue: false,
       admin: {
-        description: 'Whether the depicted intern/trainer has consented to promotional use (§6.4).',
+        description: 'Whether the depicted intern/trainer has consented to promotional use.',
       },
     },
   ],

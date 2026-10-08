@@ -82,7 +82,6 @@ describe('create access rejects naming someone else as the owner field', () => {
       overrideAccess: true,
     })
 
-    // Naming someone else: denied
     await expect(
       payload.create({
         collection: 'notes',
@@ -92,7 +91,6 @@ describe('create access rejects naming someone else as the owner field', () => {
       }),
     ).rejects.toThrow()
 
-    // Naming themselves: still allowed
     const ownNote = await payload.create({
       collection: 'notes',
       data: { session: session.id, trainer: seeded.trainerA.id },
@@ -129,7 +127,6 @@ describe('create access rejects naming someone else as the owner field', () => {
   it('an intern cannot create a Document naming another intern as its owner', async () => {
     const file = await uploadDummyFile(payload)
 
-    // Naming someone else: denied
     await expect(
       payload.create({
         collection: 'documents',
@@ -139,7 +136,6 @@ describe('create access rejects naming someone else as the owner field', () => {
       }),
     ).rejects.toThrow()
 
-    // Naming themselves: still allowed
     const ownDocument = await payload.create({
       collection: 'documents',
       data: { intern: seeded.internA.id, type: 'national-id' as const, file: file.id, verificationStatus: 'pending' as const },
@@ -164,7 +160,6 @@ describe('create access rejects naming someone else as the owner field', () => {
       overrideAccess: true,
     })
 
-    // Naming someone else as supervisor: denied
     await expect(
       payload.create({
         collection: 'workplans',
@@ -174,7 +169,7 @@ describe('create access rejects naming someone else as the owner field', () => {
       }),
     ).rejects.toThrow()
 
-    // Naming themselves but about an intern they don't supervise: denied
+    // Denied even naming themselves, because internB isn't their assigned intern.
     await expect(
       payload.create({
         collection: 'workplans',
@@ -184,7 +179,6 @@ describe('create access rejects naming someone else as the owner field', () => {
       }),
     ).rejects.toThrow()
 
-    // Naming themselves about their own assigned intern: still allowed
     const ownWorkplan = await payload.create({
       collection: 'workplans',
       data: { supervisor: seeded.supervisorA.id, intern: seeded.internA.id, cohort: cohort.id },
@@ -195,7 +189,6 @@ describe('create access rejects naming someone else as the owner field', () => {
   })
 
   it('an intern cannot create an Alumna profile naming another intern as its owner', async () => {
-    // Naming someone else: denied
     await expect(
       payload.create({
         collection: 'alumnae',
@@ -205,7 +198,6 @@ describe('create access rejects naming someone else as the owner field', () => {
       }),
     ).rejects.toThrow()
 
-    // Naming themselves: still allowed
     const ownProfile = await payload.create({
       collection: 'alumnae',
       data: { intern: seeded.internA.id, name: 'CAO Intern A' },

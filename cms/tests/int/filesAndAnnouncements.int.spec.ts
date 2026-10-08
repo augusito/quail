@@ -23,7 +23,7 @@ type Seeded = {
 
 let seeded: Seeded
 
-describe('Files & Announcements read scoping (follow-up to the §4 access-control pass)', () => {
+describe('Files & Announcements read scoping', () => {
   beforeAll(async () => {
     const payloadConfig = await config
     payload = await getPayload({ config: payloadConfig })
@@ -222,7 +222,7 @@ describe('Files & Announcements read scoping (follow-up to the §4 access-contro
       expect(found).not.toBeNull()
     })
 
-    it('a resigned alum can read announcements too (§6.1: same Alumni Hub access)', async () => {
+    it('a resigned alum can read announcements too (same Alumni Hub access)', async () => {
       const announcement = await createAnnouncement()
       const found = await payload.findByID({
         collection: 'announcements',

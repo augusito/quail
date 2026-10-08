@@ -170,7 +170,7 @@ export interface User {
   name?: string | null;
   role: 'admin' | 'trainer' | 'intern' | 'supervisor';
   /**
-   * "pending" is set automatically for §6.2 self-registrations, awaiting admin review (target 24h turnaround). Admin-created accounts default to "active".
+   * "pending" is set automatically for self-registrations, awaiting admin review (target 24h turnaround). Admin-created accounts default to "active".
    */
   status: 'active' | 'inactive' | 'pending';
   phone?: string | null;
@@ -200,7 +200,7 @@ export interface User {
 export interface Trainer {
   id: number;
   /**
-   * The trainer's login account. Set once at self-registration (§6.2).
+   * The trainer's login account. Set once at self-registration.
    */
   user: number | User;
   name: string;
@@ -213,11 +213,11 @@ export interface Trainer {
   phone: string;
   email: string;
   /**
-   * National identifier or passport number (§5, §6.2, §7 — sensitive).
+   * National identifier or passport number (sensitive).
    */
   idNumber: string;
   /**
-   * KRA PIN (§5, §6.2, §7 — sensitive).
+   * KRA PIN (sensitive).
    */
   kraPin: string;
   updatedAt: string;
@@ -230,12 +230,12 @@ export interface Trainer {
 export interface Intern {
   id: number;
   /**
-   * The intern's login account. Set once at self-registration (§6.2).
+   * The intern's login account. Set once at self-registration.
    */
   user: number | User;
   name: string;
   /**
-   * Statutory/records purposes only — no minimum-age gate is enforced at registration (§6.2, confirmed not needed for v1).
+   * Statutory/records purposes only — no minimum-age gate is enforced at registration.
    */
   dateOfBirth: string;
   nationality: string;
@@ -243,23 +243,23 @@ export interface Intern {
   phone: string;
   email: string;
   /**
-   * National identifier or passport number (§5, §6.2, §7 — sensitive).
+   * National identifier or passport number (sensitive).
    */
   idNumber: string;
   /**
-   * KRA PIN (§5, §6.2, §7 — sensitive).
+   * KRA PIN (sensitive).
    */
   kraPin: string;
   /**
-   * SHIF (formerly SHA) number (§5, §6.2, §7 — sensitive).
+   * SHIF (formerly SHA) number (sensitive).
    */
   shifNumber: string;
   /**
-   * NSSF number (§5, §6.2, §7 — sensitive).
+   * NSSF number (sensitive).
    */
   nssfNumber: string;
   /**
-   * "Exactly one required contact" (§5) — a single next-of-kin record, not a repeatable list. Name/relationship/phone are the load-bearing fields required to actually reach someone; address/email are collected when available but not required, same judgment call as the optional email/phone on the public Talent Board listing (§6.9).
+   * "Exactly one required contact" — a single next-of-kin record, not a repeatable list. Name/relationship/phone are the load-bearing fields required to actually reach someone; address/email are collected when available but not required, same judgment call as the optional email/phone on the public Talent Board listing.
    */
   nextOfKin: {
     name: string;
@@ -324,7 +324,7 @@ export interface Cohort {
   endDate: string;
   status: 'draft' | 'open' | 'active' | 'closed';
   /**
-   * §4 "Media library access… unless granted per cohort" — trainers listed here can view this cohort's cohort-extended media (Media.ts). Admin-only assets stay admin-only regardless.
+   * Trainers listed here can view this cohort's cohort-extended media (Media.ts). Admin-only assets stay admin-only regardless.
    */
   mediaAccessGrantedTo?: (number | User)[] | null;
   updatedAt: string;
@@ -339,7 +339,7 @@ export interface Enrollment {
   intern: number | User;
   cohort: number | Cohort;
   /**
-   * Assigned supervisor/"Mentor" for this intern — drives the §4/§6.6/§6.8 "assigned interns" access scoping.
+   * Assigned supervisor/"Mentor" for this intern — drives the "assigned interns" access scoping.
    */
   supervisor?: (number | null) | User;
   track: 'truck-driving' | 'mechanics' | 'ict' | 'supply-chain' | 'business-management';
@@ -355,7 +355,7 @@ export interface Invite {
   id: number;
   role: 'intern' | 'trainer';
   /**
-   * Only this address can complete registration with the resulting link (§6.2).
+   * Only this address can complete registration with the resulting link.
    */
   email: string;
   /**
@@ -371,7 +371,7 @@ export interface Invite {
    */
   token?: string | null;
   /**
-   * Auto-set to 24h after creation (§6.2).
+   * Auto-set to 24h after creation.
    */
   expiresAt?: string | null;
   /**
@@ -390,7 +390,7 @@ export interface Contract {
   id: number;
   trainer: number | User;
   /**
-   * Trainers aren't tied to a cohort at invite time (§6.2) — each contract is created separately, per cohort the trainer participates in.
+   * Trainers aren't tied to a cohort at invite time — each contract is created separately, per cohort the trainer participates in.
    */
   cohort: number | Cohort;
   status: 'draft' | 'sent' | 'signed' | 'active' | 'released';
@@ -403,7 +403,7 @@ export interface Contract {
    */
   mediaConsent?: boolean | null;
   /**
-   * "A trainer can flag/request completion, but admin makes the final transition" (§6.4, confirmed). Setting this does not itself release the contract — admin still moves status to Released.
+   * A trainer can flag/request completion, but admin makes the final transition. Setting this does not itself release the contract — admin still moves status to Released.
    */
   releaseRequested?: boolean | null;
   updatedAt: string;
@@ -451,7 +451,7 @@ export interface Note {
   slideDeck?: (number | null) | File;
   assignment?: (number | null) | File;
   /**
-   * End-of-module assessment report (25 questions: 15 MCQ, 5 true/false, 1 case study worth 5 structured questions — §6.4).
+   * End-of-module assessment report (25 questions: 15 MCQ, 5 true/false, 1 case study worth 5 structured questions).
    */
   assessmentReport?: (number | null) | File;
   updatedAt: string;
@@ -468,7 +468,7 @@ export interface Score {
   value: number;
   notes?: string | null;
   /**
-   * Controls whether the intern can see this score yet (§6.5).
+   * Controls whether the intern can see this score yet.
    */
   finalized?: boolean | null;
   updatedAt: string;
@@ -512,7 +512,7 @@ export interface Evaluation {
   id: number;
   intern: number | User;
   /**
-   * Supervisor for standard evaluations; trainer for driving-skills checkpoints (§6.5).
+   * Supervisor for standard evaluations; trainer for driving-skills checkpoints.
    */
   author: number | User;
   cohort: number | Cohort;
@@ -558,7 +558,7 @@ export interface Media {
   cohort: number | Cohort;
   visibilityScope: 'admin-only' | 'cohort-extended';
   /**
-   * Whether the depicted intern/trainer has consented to promotional use (§6.4).
+   * Whether the depicted intern/trainer has consented to promotional use.
    */
   consentGiven?: boolean | null;
   updatedAt: string;
@@ -581,13 +581,13 @@ export interface Alumna {
   id: number;
   intern: number | User;
   /**
-   * The public Talent Board display name (§6.9 public field) — separate from Users.name, since the intern's account isn't publicly readable.
+   * The public Talent Board display name — separate from Users.name, since the intern's account isn't publicly readable.
    */
   name: string;
   photo?: (number | null) | Image;
   employmentStatus?: string | null;
   /**
-   * Driving class certifications, defensive driving certification, diploma/course names and issuing institutions (§6.9).
+   * Driving class certifications, defensive driving certification, diploma/course names and issuing institutions.
    */
   courses?:
     | {
@@ -602,13 +602,13 @@ export interface Alumna {
       }[]
     | null;
   /**
-   * Narrative skills/ability summary: soft skills, technical skills gained, notable achievements (§6.9).
+   * Narrative skills/ability summary: soft skills, technical skills gained, notable achievements.
    */
   bio?: string | null;
   email?: string | null;
   phone?: string | null;
   /**
-   * Opt-in step at graduation for appearing on the public Talent Board; self-service, can be withdrawn at any time (§6.9).
+   * Opt-in step at graduation for appearing on the public Talent Board; self-service, can be withdrawn at any time.
    */
   optedIn?: boolean | null;
   updatedAt: string;

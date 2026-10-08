@@ -1,10 +1,6 @@
 import { nodemailerAdapter } from '@payloadcms/email-nodemailer'
 import nodemailer from 'nodemailer'
 
-// §7 "Integrations: outbound email (reminders, §6.3), needed before Phase 2
-// go-live" / §10 "a built-in job queue plus an email adapter (Nodemailer/
-// Resend/SendGrid)".
-//
 // With no SMTP_* env vars set, this deliberately does NOT fall back to
 // nodemailer's built-in "create a live ethereal.email test account"
 // behavior — that makes a real network call and a failed/blocked one would

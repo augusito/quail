@@ -2,12 +2,12 @@ import type { CollectionConfig } from 'payload'
 
 import { adminOrRoleOwnsField, adminOrRoleOwnsFieldOnCreate, isAdmin } from '../access/roles'
 
-// §5/§6.2 (proposal v2): intern profile data collected at self-registration
-// — additive to `Users`, same reasoning as `Trainer.ts`. Every existing
-// collection that references "intern" (Enrollments, Documents, Scores,
-// Evaluations, Workplans, Logbooks, Alumnae, ...) keeps relating to `users`.
+// Intern profile data collected at self-registration — additive to
+// `Users`, same reasoning as `Trainer.ts`. Every existing collection that
+// references "intern" (Enrollments, Documents, Scores, Evaluations,
+// Workplans, Logbooks, Alumnae, ...) keeps relating to `users`.
 //
-// §7 sensitive fields (dateOfBirth, idNumber, kraPin, shifNumber,
+// Sensitive fields (dateOfBirth, idNumber, kraPin, shifNumber,
 // nssfNumber): same reasoning as Trainer.ts — row-level access already
 // limits reads to admin or the intern themself; the export-exclusion in
 // src/exports/registry.ts is what actually satisfies "not exposed in bulk
@@ -35,7 +35,7 @@ export const Intern: CollectionConfig = {
       unique: true,
       admin: {
         readOnly: true,
-        description: 'The intern\'s login account. Set once at self-registration (§6.2).',
+        description: 'The intern\'s login account. Set once at self-registration.',
       },
     },
     { name: 'name', type: 'text', required: true },
@@ -45,7 +45,7 @@ export const Intern: CollectionConfig = {
       required: true,
       admin: {
         description:
-          'Statutory/records purposes only — no minimum-age gate is enforced at registration (§6.2, confirmed not needed for v1).',
+          'Statutory/records purposes only — no minimum-age gate is enforced at registration.',
       },
     },
     { name: 'nationality', type: 'text', required: true },
@@ -57,27 +57,27 @@ export const Intern: CollectionConfig = {
       type: 'text',
       label: 'ID Number',
       required: true,
-      admin: { description: 'National identifier or passport number (§5, §6.2, §7 — sensitive).' },
+      admin: { description: 'National identifier or passport number (sensitive).' },
     },
-    { name: 'kraPin', type: 'text', required: true, admin: { description: 'KRA PIN (§5, §6.2, §7 — sensitive).' } },
+    { name: 'kraPin', type: 'text', required: true, admin: { description: 'KRA PIN (sensitive).' } },
     {
       name: 'shifNumber',
       type: 'text',
       required: true,
-      admin: { description: 'SHIF (formerly SHA) number (§5, §6.2, §7 — sensitive).' },
+      admin: { description: 'SHIF (formerly SHA) number (sensitive).' },
     },
     {
       name: 'nssfNumber',
       type: 'text',
       required: true,
-      admin: { description: 'NSSF number (§5, §6.2, §7 — sensitive).' },
+      admin: { description: 'NSSF number (sensitive).' },
     },
     {
       name: 'nextOfKin',
       type: 'group',
       admin: {
         description:
-          '"Exactly one required contact" (§5) — a single next-of-kin record, not a repeatable list. Name/relationship/phone are the load-bearing fields required to actually reach someone; address/email are collected when available but not required, same judgment call as the optional email/phone on the public Talent Board listing (§6.9).',
+          '"Exactly one required contact" — a single next-of-kin record, not a repeatable list. Name/relationship/phone are the load-bearing fields required to actually reach someone; address/email are collected when available but not required, same judgment call as the optional email/phone on the public Talent Board listing.',
       },
       fields: [
         { name: 'name', type: 'text', required: true },

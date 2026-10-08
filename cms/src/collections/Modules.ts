@@ -2,10 +2,9 @@ import type { CollectionConfig } from 'payload'
 
 import { isAdmin, isAuthenticated } from '../access/roles'
 
-// Curriculum reference data — not explicitly assigned to a role in §4, so
-// treated as admin-managed like Cohorts, readable by anyone authenticated
-// who needs to reference it (trainers scheduling sessions, interns viewing
-// their track).
+// Curriculum reference data — treated as admin-managed like Cohorts,
+// readable by anyone authenticated who needs to reference it (trainers
+// scheduling sessions, interns viewing their track).
 export const Modules: CollectionConfig = {
   slug: 'modules',
   admin: {
