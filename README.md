@@ -5,8 +5,8 @@ truck driving, automotive mechanics, ICT, supply chain, and business management.
 digitizes cohort management, trainer contracting, training delivery, compliance
 documentation, and a post-graduation talent board.
 
-All application code lives under [`cms/`](cms/README.md) — start there for setup,
-commands, and architecture. [`she-delivers-proposal.md`](she-delivers-proposal.md) is
+All application code lives under [`she-delivers-web/`](she-delivers-web/README.md) —
+start there for setup, commands, and architecture. [`she-delivers-proposal.md`](she-delivers-proposal.md) is
 the full spec the app implements. [`CLAUDE.md`](CLAUDE.md) holds the project's
 commands and domain conventions.
 
