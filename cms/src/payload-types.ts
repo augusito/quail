@@ -259,7 +259,7 @@ export interface Intern {
    */
   nssfNumber: string;
   /**
-   * "Exactly one required contact" — a single next-of-kin record, not a repeatable list. Name/relationship/phone are the load-bearing fields required to actually reach someone; address/email are collected when available but not required, same judgment call as the optional email/phone on the public Talent Board listing.
+   * A single next-of-kin record, not a repeatable list. Name, relationship and phone are required to actually reach someone; address and email are collected when available.
    */
   nextOfKin: {
     name: string;
@@ -324,7 +324,7 @@ export interface Cohort {
   endDate: string;
   status: 'draft' | 'open' | 'active' | 'closed';
   /**
-   * Trainers listed here can view this cohort's cohort-extended media (Media.ts). Admin-only assets stay admin-only regardless.
+   * Trainers listed here get read access to this cohort's cohort-extended media. Admin-only assets stay admin-exclusive regardless.
    */
   mediaAccessGrantedTo?: (number | User)[] | null;
   updatedAt: string;
@@ -339,7 +339,7 @@ export interface Enrollment {
   intern: number | User;
   cohort: number | Cohort;
   /**
-   * Assigned supervisor/"Mentor" for this intern — drives the "assigned interns" access scoping.
+   * Assigned supervisor ("Mentor") for this intern; determines which interns a supervisor can access.
    */
   supervisor?: (number | null) | User;
   track: 'truck-driving' | 'mechanics' | 'ict' | 'supply-chain' | 'business-management';
@@ -375,7 +375,7 @@ export interface Invite {
    */
   expiresAt?: string | null;
   /**
-   * Set automatically: 'used' once registration completes, 'expired' the first time a stale invite is checked past expiresAt. 'Revoked' is admin's discretion (e.g. entered the wrong email, or the person is no longer eligible) — rejected the same as an expired one.
+   * Set automatically: 'used' on registration, 'expired' once past expiresAt. 'Revoked' is admin's discretion (wrong email, no longer eligible) and is rejected the same as expired.
    */
   status: 'sent' | 'used' | 'expired' | 'revoked';
   createdBy?: (number | null) | User;
@@ -403,7 +403,7 @@ export interface Contract {
    */
   mediaConsent?: boolean | null;
   /**
-   * A trainer can flag/request completion, but admin makes the final transition. Setting this does not itself release the contract — admin still moves status to Released.
+   * Trainer-set flag requesting release; checking it doesn't release the contract, only admin moving status to Released does.
    */
   releaseRequested?: boolean | null;
   updatedAt: string;

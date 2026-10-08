@@ -135,7 +135,7 @@ export const Invites: CollectionConfig = {
       defaultValue: 'sent',
       admin: {
         description:
-          "Set automatically: 'used' once registration completes, 'expired' the first time a stale invite is checked past expiresAt. 'Revoked' is admin's discretion (e.g. entered the wrong email, or the person is no longer eligible) — rejected the same as an expired one.",
+          "Set automatically: 'used' on registration, 'expired' once past expiresAt. 'Revoked' is admin's discretion (wrong email, no longer eligible) and is rejected the same as expired.",
       },
       options: [
         { label: 'Sent', value: 'sent' },

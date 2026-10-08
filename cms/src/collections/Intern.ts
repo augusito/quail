@@ -77,7 +77,7 @@ export const Intern: CollectionConfig = {
       type: 'group',
       admin: {
         description:
-          '"Exactly one required contact" — a single next-of-kin record, not a repeatable list. Name/relationship/phone are the load-bearing fields required to actually reach someone; address/email are collected when available but not required, same judgment call as the optional email/phone on the public Talent Board listing.',
+          'A single next-of-kin record, not a repeatable list. Name, relationship and phone are required to actually reach someone; address and email are collected when available.',
       },
       fields: [
         { name: 'name', type: 'text', required: true },
