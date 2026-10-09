@@ -49,32 +49,8 @@ export const sendInviteEmailTask: TaskConfig<{ input: Input; output: Output }> =
     const subject = "You're invited to register with She Delivers"
     const text = `You've been invited to register as a ${roleLabel}${trackLine}.\n\nComplete your registration here: ${link}\n\nThis link expires 24 hours after it was issued. If you weren't expecting this invite, you can ignore this email.`
 
-    // TEMPORARY — remove this whole block once SMTP2GO delivery is
-    // confirmed working in production. The adapter (@payloadcms/email-
-    // nodemailer) composes the From header as `${EMAIL_FROM_NAME} <${EMAIL_FROM}>`
-    // — logging the raw env values here catches a value like
-    // "<foo@example.com>" that already has its own angle brackets, which
-    // produces a malformed "Name <<foo@example.com>>" header that SMTP2GO
-    // (or any strict SMTP server) will reject.
-    payload.logger.info(
-      `[invite][debug] EMAIL_FROM=${JSON.stringify(process.env.EMAIL_FROM)} EMAIL_FROM_NAME=${JSON.stringify(process.env.EMAIL_FROM_NAME)} SMTP_HOST=${process.env.SMTP_HOST ?? '(unset — jsonTransport, nothing is actually sent)'}`,
-    )
-
     try {
-      // Also logs on success, with nodemailer's own response — "the job
-      // ran without throwing" doesn't tell us whether SMTP2GO actually
-      // accepted and queued the message for delivery.
-      const info = (await payload.sendEmail({ to: invite.email, subject, text })) as {
-        accepted?: unknown
-        messageId?: unknown
-        rejected?: unknown
-        response?: unknown
-      }
-      payload.logger.info(
-        `[invite][debug] sent invite id=${invite.id} email=${invite.email} smtpResponse=${JSON.stringify(
-          { accepted: info?.accepted, rejected: info?.rejected, response: info?.response, messageId: info?.messageId },
-        )}`,
-      )
+      await payload.sendEmail({ to: invite.email, subject, text })
       return { output: { sent: true } }
     } catch (err) {
       // Logged with enough context to find and re-send manually (the
