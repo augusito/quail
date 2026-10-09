@@ -29,6 +29,7 @@ import { Workplans } from './collections/Workplans'
 import { emailAdapter } from './email/adapter'
 import { exportCollectionEndpoint } from './endpoints/exportCollection'
 import { registerEndpoints } from './endpoints/register'
+import { sendInviteEmailTask } from './jobs/sendInviteEmail'
 import { sendSessionReminderTask } from './jobs/sendSessionReminder'
 
 const filename = fileURLToPath(import.meta.url)
@@ -95,7 +96,7 @@ export default buildConfig({
   // short-lived test processes alive; tests that care about job execution
   // call payload.jobs.run() explicitly instead.
   jobs: {
-    tasks: [sendSessionReminderTask],
+    tasks: [sendSessionReminderTask, sendInviteEmailTask],
     autoRun: process.env.VITEST ? [] : [{ cron: '* * * * *', limit: 20 }],
   },
   secret: process.env.PAYLOAD_SECRET || '',

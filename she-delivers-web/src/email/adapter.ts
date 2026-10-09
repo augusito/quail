@@ -11,7 +11,15 @@ import nodemailer from 'nodemailer'
 // server that doesn't exist yet. Built via `nodemailer.createTransport`
 // directly (rather than the adapter's `transportOptions`, typed narrowly
 // as SMTP-only) so jsonTransport type-checks.
-const transport = process.env.SMTP_HOST
+//
+// Under Vitest, SMTP_HOST is ignored even if it's set — `vitest.setup.ts`
+// loads `.env` via `dotenv/config` on top of `test.env`, so real SMTP2GO
+// credentials sitting in a developer's `.env` would otherwise make the
+// integration suite send real mail (slowly, and to made-up test addresses)
+// instead of composing it locally. Same reasoning as `jobs.autoRun` being
+// disabled under VITEST in payload.config.ts.
+const useRealSmtp = Boolean(process.env.SMTP_HOST) && !process.env.VITEST
+const transport = useRealSmtp
   ? nodemailer.createTransport({
       host: process.env.SMTP_HOST,
       port: Number(process.env.SMTP_PORT || 587),
@@ -22,7 +30,7 @@ const transport = process.env.SMTP_HOST
 
 export const emailAdapter = nodemailerAdapter({
   defaultFromAddress: process.env.EMAIL_FROM || 'noreply@she-delivers.local',
-  defaultFromName: 'She Delivers',
-  skipVerify: !process.env.SMTP_HOST,
+  defaultFromName: process.env.EMAIL_FROM_NAME || 'She Delivers',
+  skipVerify: !useRealSmtp,
   transport,
 })
