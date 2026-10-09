@@ -85,7 +85,7 @@ This system digitizes cohort management, training delivery, compliance documenta
 
 ### 6.2 Registration & Account Provisioning
 
-Both interns and trainers self-register via an invite link personalized to their email. Admin creates an `Invite` record — email, role, and (for intern invites only) cohort and track; trainer invites carry no cohort, since a trainer isn't tied to one until admin prepares a contract for them later (§6.4). Only the invited email address can complete registration with the resulting link.
+Both interns and trainers self-register via an invite link personalized to their email. Admin creates an `Invite` record — email, role, and (for intern invites only) cohort and track; trainer invites carry no cohort, since a trainer isn't tied to one until admin prepares a contract for them later (§6.4). Only the invited email address can complete registration with the resulting link. Creating the invite queues an email to that address with the registration link, over the same Nodemailer/SMTP channel as reminders (§6.3); a failed send is logged rather than blocking the invite, and the link is also recoverable from that log.
 
 Invite links expire 24 hours after issue (checked lazily when the link is used, not via a cron) or can be revoked at admin's discretion. Registration is not immediate: after self-registering, the account sits in a `pending` status until admin reviews and approves it.
 

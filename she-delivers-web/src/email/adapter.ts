@@ -22,7 +22,7 @@ const transport = process.env.SMTP_HOST
 
 export const emailAdapter = nodemailerAdapter({
   defaultFromAddress: process.env.EMAIL_FROM || 'noreply@she-delivers.local',
-  defaultFromName: 'She Delivers',
+  defaultFromName: process.env.EMAIL_FROM_NAME || 'She Delivers',
   skipVerify: !process.env.SMTP_HOST,
   transport,
 })

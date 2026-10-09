@@ -135,6 +135,7 @@ export interface Config {
   jobs: {
     tasks: {
       sendSessionReminder: TaskSendSessionReminder;
+      sendInviteEmail: TaskSendInviteEmail;
       inline: {
         input: unknown;
         output: unknown;
@@ -696,7 +697,7 @@ export interface PayloadJob {
     | {
         executedAt: string;
         completedAt: string;
-        taskSlug: 'inline' | 'sendSessionReminder';
+        taskSlug: 'inline' | 'sendSessionReminder' | 'sendInviteEmail';
         taskID: string;
         input?:
           | {
@@ -729,7 +730,7 @@ export interface PayloadJob {
         id?: string | null;
       }[]
     | null;
-  taskSlug?: ('inline' | 'sendSessionReminder') | null;
+  taskSlug?: ('inline' | 'sendSessionReminder' | 'sendInviteEmail') | null;
   queue?: string | null;
   waitUntil?: string | null;
   processing?: boolean | null;
@@ -1307,6 +1308,18 @@ export interface TaskSendSessionReminder {
   output: {
     recipientCount?: number | null;
     skippedReason?: string | null;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskSendInviteEmail".
+ */
+export interface TaskSendInviteEmail {
+  input: {
+    inviteId: number;
+  };
+  output: {
+    sent?: boolean | null;
   };
 }
 /**

@@ -29,12 +29,34 @@ See `.env.example` for the full annotated list. The ones worth knowing about:
 | `PAYLOAD_DATABASE` | `sqlite` (default, local dev/tests) or `postgres` (production) |
 | `DATABASE_URL` | SQLite file path or Postgres connection string, matching the adapter above |
 | `PAYLOAD_SECRET` | required; Payload's signing secret |
-| `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, `EMAIL_FROM` | session-reminder email delivery; leave `SMTP_HOST` unset locally and mail is composed via nodemailer's `jsonTransport` instead of sent |
-| `PAYLOAD_PUBLIC_SERVER_URL` | base URL used when logging invite links; defaults to `http://localhost:3000` |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, `EMAIL_FROM`, `EMAIL_FROM_NAME` | SMTP2GO (or any SMTP provider) credentials for session-reminder and invite email delivery; leave `SMTP_HOST` unset locally and mail is composed via nodemailer's `jsonTransport` instead of sent |
+| `PAYLOAD_PUBLIC_SERVER_URL` | base URL used to build the registration link in invite emails (and when logging it); defaults to `http://localhost:3000` |
 | `ADMIN_CONTACT_EMAIL` | contact address shown on the public Talent Board |
 
 To switch to Postgres, set `PAYLOAD_DATABASE=postgres` and `DATABASE_URL` in
 `.env`; `docker-compose.yml` can spin up a local Postgres instance for this.
+
+## Email delivery
+
+`src/email/adapter.ts` wires Payload's nodemailer adapter to SMTP2GO (or any
+standard SMTP provider) via the `SMTP_*`/`EMAIL_FROM*` env vars above. Two
+things send mail through it:
+
+- Session reminders (`src/jobs/sendSessionReminder.ts`).
+- Invite emails, carrying the registration link, queued by `Invites.ts`'s
+  `afterChange` hook and sent by `src/jobs/sendInviteEmail.ts`.
+
+Both go through Payload's job queue rather than sending inline, so a slow or
+unreachable mail provider never blocks the request that created the invite
+or session; a failed send is logged (with the link, so it's still
+recoverable) rather than thrown, and retried twice by the job queue.
+
+With `SMTP_HOST` unset, nothing is actually sent — mail is composed via
+nodemailer's `jsonTransport` instead, which is what local dev, tests and CI
+run with. To verify real delivery after setting the SMTP2GO env vars, create
+an invite in `/admin` and confirm the email arrives at the invited address
+(and check the server log for `[invite] failed to email invite ...` if it
+doesn't).
 
 ## Scripts
 
@@ -75,11 +97,6 @@ There is no production deployment yet. Worth knowing before changing that:
 - **No migration tooling.** Payload runs in push mode; a schema or
   field-key rename doesn't need a data migration, just an update to the
   collection config (and `npm run generate:types`).
-- **Invite emails are logged, not sent.** `Invites.ts`'s `afterChange` hook
-  logs the registration link instead of emailing it — an admin currently has
-  to copy the link out of the server log and send it manually.
-  `src/email/adapter.ts` already wires up nodemailer for session reminders,
-  so sending invite emails the same way is a small follow-up.
 - **No custom Payload admin dashboard.** Admin users work entirely in
   Payload's stock generated UI.
 - **`/api/register` rate-limiting is in-memory and single-instance only** —

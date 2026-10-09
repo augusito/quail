@@ -172,15 +172,23 @@ export const Invites: CollectionConfig = {
       },
     ],
     afterChange: [
-      ({ doc, operation, req }) => {
+      async ({ doc, operation, req }) => {
         if (operation !== 'create') return
         const baseUrl = process.env.PAYLOAD_PUBLIC_SERVER_URL || 'http://localhost:3000'
         const cohortId = doc.cohort && typeof doc.cohort === 'object' ? doc.cohort.id : doc.cohort
-        // Email integration not yet implemented — log the link so it's
-        // usable in the meantime.
+        // Logged regardless of whether the email send (queued below)
+        // succeeds, so the link is still recoverable from server logs if a
+        // mail provider is down or misconfigured.
         req.payload.logger.info(
           `[invite] cohort=${cohortId} role=${doc.role} email=${doc.email} track=${doc.track ?? '—'} expiresAt=${doc.expiresAt} link=${baseUrl}/register?token=${doc.token}`,
         )
+        // Queued (src/jobs/sendInviteEmail.ts) rather than sent inline, so a
+        // slow or unreachable mail provider never blocks this admin request.
+        await req.payload.jobs.queue({
+          task: 'sendInviteEmail',
+          input: { inviteId: doc.id },
+          req,
+        })
       },
     ],
   },
